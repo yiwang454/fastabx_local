@@ -61,3 +61,6 @@ ignore = [
     "PD901",  # pandas-df-variable-name
     "TRY003", # raise-vanilla-args
 ]
+
+[tool.setuptools]
+license-files = [] # https://github.com/pypa/setuptools/issues/4759
