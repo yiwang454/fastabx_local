@@ -32,15 +32,16 @@ context conditions.
 
 ## Installation
 
-The easiest way to get started is to use the pre-built package.
-
 ### Pre-built package
 
-To install the package on Macos or Linux x86-64, download the corresponding pre-built
-wheel in the Release page, and install it with `pip` in your environment with
-Python 3.12.
-The package will be published on PyPI soon. We will also add support for other
-Python versions.
+To use the package on Macos or Linux x86-64, install it with `pip` in your environment with
+Python >=3.12:
+
+```bash
+pip install fastabx
+```
+
+We will add support for other platforms soon.
 
 ### Build from source
 
