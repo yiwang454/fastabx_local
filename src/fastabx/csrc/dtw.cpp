@@ -1,6 +1,7 @@
-#include <Python.h>
 #include <omp.h>
-#include <torch/all.h>
+#include <Python.h>
+#include <torch/library.h>
+#include <torch/types.h>
 
 extern "C" {
 /* Creates a dummy empty _C module that can be imported from Python.

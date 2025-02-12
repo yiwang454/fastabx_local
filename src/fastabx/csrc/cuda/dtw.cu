@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <torch/all.h>
+#include <torch/library.h>
+#include <torch/types.h>
 
 // Shared memory has a size of 48kB
 // Maximum diagonal length is N such that N * 3 * sizeof(float) = 48kB

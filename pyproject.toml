@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=75.0.0",
     "setuptools-scm>=8.1.0",
-    "torch>=2.6.0",
+    "torch==2.6.0",
     "numpy>=2.0.2",
     "ninja>=1.11",
 ]
@@ -19,7 +19,7 @@ license = { file = "LICENSE" } # To update to PEP 639 once support is added to s
 dependencies = [
     "numpy>=2.1.3",
     "polars>=1.14.0",
-    "torch>=2.6.0",
+    "torch==2.6.0",
     "tqdm>=4.67.1",
 ]
 

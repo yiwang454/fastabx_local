@@ -43,6 +43,9 @@ pip install fastabx
 
 We will add support for other platforms soon.
 
+The DTW relies on the C++ API of PyTorch which has no API/ABI compatibility between releases.
+This means you have to have to use the exact version of PyTorch this package was compiled against.
+
 ### Build from source
 
 Download this repository and run:
