@@ -7,9 +7,13 @@ on:
 
 jobs:
   build:
+    name: Build wheel
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-15]
+        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-14, windows-latest]
+        cuda-version: ['12.4.1']
+    env:
+      GLIBC_VERSION: '2_34'
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -20,13 +24,59 @@ jobs:
         id: get_tag
         run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+        # https://github.com/Dao-AILab/flash-attention/blob/main/.github/workflows/publish.yml
+      - name: Free up disk space
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+
+      - name: Set up swap space
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 10
+
+      - name: Install CUDA {{ matrix.cuda-version }}
+        if: ${{ runner.os == 'Linux' || runner.os == 'Windows' }}
+        uses: Jimver/cuda-toolkit@v0.2.21
+        id: cuda-toolkit
+        with:
+          cuda: ${{ matrix.cuda-version }}
+          method: "network"
+          sub-packages: '["nvcc"]'
+          linux-local-args: '["--toolkit"]'
+
+      - name: Check CUDA installation
+        if: ${{ runner.os == 'Linux' || runner.os == 'Windows' }}
+        run: |
+          nvcc -V
+          echo "CUDA_HOME=${{steps.cuda-toolkit.outputs.CUDA_PATH}}" >> $GITHUB_ENV
+          echo $CUDA_HOME
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
 
-      - name: Build
+      - name: Build wheel
         run: uv build
+
+      - name: Set manylinux version
+        if: runner.os == 'Linux'
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+            echo "PLATFORM=manylinux_${GLIBC_VERSION}_x86_64" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
+            echo "PLATFORM=manylinux_${GLIBC_VERSION}_aarch64" >> $GITHUB_ENV
+          fi
+
+      - name: Relabel the Linux wheel
+        if: runner.os == 'Linux'
+        run: |
+          uvx --with patchelf auditwheel repair ./dist/*abi3-linux*.whl -w ./dist --plat $PLATFORM --exclude "libtorch*" --exclude "libc10*" --exclude "libcu*"
+          rm ./dist/*abi3-linux*.whl
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -35,12 +85,10 @@ jobs:
           path: ./dist/*
 
   release:
+    name: Create release
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Get tag name
         id: get_tag
         run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
@@ -48,7 +96,12 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: artifacts
+
+      - name: Move the artifacts
+        run: |
+          mkdir ./dist
+          mv ./artifacts/**/*.whl ./artifacts/dist-ubuntu-22.04/*.tar.gz ./dist
 
       - name: List artifacts
         run:
@@ -58,4 +111,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.get_tag.outputs.TAG_NAME }}
-        run: gh release create "$TAG" ./dist/**/*.whl ./dist/dist-ubuntu-latest/abx-$TAG.tar.gz
+        run: gh release create "$TAG" ./dist/*
+
+      - name: Upload to PyPI
+        run: uv publish -t ${{ secrets.UV_PUBLISH_TOKEN }}

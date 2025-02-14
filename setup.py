@@ -2,6 +2,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 from setuptools import Extension, setup
 from torch.utils.cpp_extension import CUDA_HOME, BuildExtension, CppExtension, CUDAExtension
@@ -16,10 +17,10 @@ def get_extension() -> Extension:
         "cxx": ["-fdiagnostics-color=always", "-DPy_LIMITED_API=0x030c0000", "-O3", *openmp],
         "nvcc": ["-O3"],
     }
-    sources = ["src/fastabx/csrc/dtw.cpp"]
+    sources = [Path("src/fastabx/csrc/dtw.cpp")]
     if use_cuda:
         os.environ["TORCH_CUDA_ARCH_LIST"] = "Volta;Turing;Ampere;Ada;Hopper"
-        sources.append("src/fastabx/csrc/cuda/dtw.cu")
+        sources.append(Path("src/fastabx/csrc/cuda/dtw.cu"))
     return extension(
         "fastabx._C",
         sources,
