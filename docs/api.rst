@@ -2,10 +2,10 @@
 API reference
 =============
 
+.. autofunction:: fastabx.zerospeech_abx
+
 Standard classes and functions
 ==============================
-
-.. autofunction:: fastabx.zerospeech_abx
 
 Dataset
 -------

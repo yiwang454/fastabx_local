@@ -2,8 +2,8 @@
 Install
 =======
 
-Installing the latest release
-=============================
+Latest release
+==============
 
 Install the package with pip:
 
@@ -16,8 +16,8 @@ The pinned PyTorch version is the one available on PyPI.
 
 fastabx is available on Linux x86-64 and aarch64 (with glibc 2.34 or later [#glibc]_), macOS arm64, and Windows x86-64.
 
-Building from source
-====================
+Build from source
+=================
 
 1. Clone the repository:
 

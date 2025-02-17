@@ -17,6 +17,6 @@ copyright = f"{datetime.now(tz=UTC).year}, {author}"  # noqa: A001
 version = metadata(project)["Version"]
 release = version
 
+autodoc_typehints = "description"
 exclude_patterns = ["build"]
 html_theme = "furo"
-html_static_path = ["_static"]
