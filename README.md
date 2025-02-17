@@ -1,6 +1,6 @@
 # Fast ABX evaluation
 
-**fastabx** is a Python package to perform the ABX discrimination test, and do it fast.
+**fastabx** is a Python package for running the ABX discrimination test — and doing it fast.
 
 Check out the documentation for more information: https://docs.cognitive-ml.fr/fastabx
 
