@@ -1,9 +1,8 @@
 """Entry point for the ZeroSpeech ABX evaluation."""
 
 import argparse
-import typing as tp
 
-from fastabx.distance import DistanceName
+from fastabx.distance import available_distances
 from fastabx.zerospeech import zerospeech_abx
 
 
@@ -15,7 +14,7 @@ def main() -> None:
     parser.add_argument("--frequency", type=int, default=50, help="Feature frequency (in Hz)")
     parser.add_argument("--speaker", choices=["within", "across"], default="within")
     parser.add_argument("--context", choices=["within", "any"], default="within")
-    parser.add_argument("--distance", choices=tp.get_args(DistanceName), default="cosine")
+    parser.add_argument("--distance", choices=available_distances(), default="cosine")
     parser.add_argument("--max-size-group", type=int, default=10, help="Maximum size of a cell")
     parser.add_argument("--max-x-across", type=int, default=5, help="With 'across', maximum number of X given (A, B)")
     parser.add_argument("--seed", type=int, default=0)

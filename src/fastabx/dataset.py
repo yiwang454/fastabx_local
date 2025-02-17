@@ -19,6 +19,7 @@ from tqdm import tqdm
 from fastabx.utils import Environment
 
 type FeatureMaker = Callable[[str | Path], torch.Tensor]
+type ArrayLike = npt.ArrayLike
 
 
 @dataclass(frozen=True)
@@ -196,7 +197,7 @@ class Dataset:
         return cls.from_dataframe(pl.from_dicts(data), feature_columns)
 
     @classmethod
-    def from_numpy(cls, features: npt.ArrayLike, labels: Mapping[str, Sequence[object]]) -> "Dataset":
+    def from_numpy(cls, features: ArrayLike, labels: Mapping[str, Sequence[object]]) -> "Dataset":
         """Create a dataset from the features (numpy array) and the labels (dictionary of sequences)."""
         features_df = pl.from_numpy(np.asarray(features))
         labels_df = pl.from_dict(labels)

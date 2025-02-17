@@ -6,6 +6,7 @@ from typing import Literal
 import torch
 
 from fastabx.dataset import Dataset, FeatureMaker
+from fastabx.distance import DistanceName
 from fastabx.score import Score
 from fastabx.subsample import Subsampler
 from fastabx.task import Task
@@ -17,7 +18,7 @@ def zerospeech_abx(  # noqa: PLR0913
     *,
     speaker: Literal["within", "across"] = "within",
     context: Literal["within", "any"] = "within",
-    distance: Literal["cosine", "euclidean", "kl_symmetric", "identical"] = "cosine",
+    distance: DistanceName = "cosine",
     frequency: int = 50,
     feature_maker: FeatureMaker = torch.load,
     max_size_group: int = 10,
