@@ -19,7 +19,7 @@ def subsample_across_group(df: pl.LazyFrame, size: int, seed: int = 0) -> pl.Laz
     """Subsample each group of 'across' condition by taking ``size`` possible values for X in each group."""
     x_cols = [c for c in df.collect_schema() if c.endswith("_x") and c != "index_x"]
     to_ignore = cs.starts_with("index") | cs.ends_with("_x")
-    df = df.with_columns(pl.concat_str(~to_ignore).alias("__group"), separator="-")
+    df = df.with_columns(pl.concat_str(~to_ignore, separator="-").alias("__group"))
     return (
         df.group_by("__group", maintain_order=True)
         .agg((cs.ends_with("_x") & (~cs.starts_with("index"))).unique().shuffle(seed).head(size))
