@@ -3,37 +3,25 @@
 from itertools import chain
 
 import polars as pl
-import torch
-
-PATTERN_INVALID_VALUE_IN_CELL = "[-_]"
-INVALID_COLUMN_SUFFIX = ("_a", "_b", "_x")
-INVALID_COLUMN_NAMES = {
-    "group",
-    "score",
-    "length",
-    "right",
-    "left",
-    "start",
-    "end",
-    "index",
-    "lookup",
-}
+from torch import Tensor
 
 NDIM = 3
+INVALID_COLUMN_SUFFIX = ("_a", "_b", "_x")
+INVALID_COLUMN_NAMES = {"index", "score", "__group", "__lookup"}
 
 
-class ColumnNameError(ValueError):
+class LabelReservedNameError(ValueError):
     """Invalid name for a condition."""
 
     def __init__(self, name: str) -> None:
-        super().__init__(f"Invalid column name: {name}")
+        super().__init__(f"Invalid label: {name}. This name is reserved for internal computations.")
 
 
-class ValueInColumnError(ValueError):
-    """Invalid value in a column."""
+class LabelSuffixError(ValueError):
+    """Invalid suffix for a condition."""
 
     def __init__(self, name: str) -> None:
-        super().__init__(f"Invalid value in column: {name}")
+        super().__init__(f"Invalid label: {name}. Cannot end by _a, _b, or _x.")
 
 
 def verify_task_conditions(conditions: list[str]) -> None:
@@ -46,14 +34,12 @@ def verify_task_conditions(conditions: list[str]) -> None:
 
 
 def verify_dataset_labels(df: pl.DataFrame) -> None:
-    """Check the columns: both the names and the values. Only for the columns used in the task."""
-    for col, dtype in df.schema.items():
-        if col in INVALID_COLUMN_NAMES or col.endswith(INVALID_COLUMN_SUFFIX):
-            raise ColumnNameError(col)
-        if dtype != pl.String:
-            continue
-        if df[col].str.contains(PATTERN_INVALID_VALUE_IN_CELL).any():
-            raise ValueInColumnError(col)
+    """Check the column labels."""
+    for col in df.schema:
+        if col in INVALID_COLUMN_NAMES:
+            raise LabelReservedNameError(col)
+        if col.endswith(INVALID_COLUMN_SUFFIX):
+            raise LabelSuffixError(col)
 
 
 def verify_subsampler_params(*sizes: int, seed: int) -> None:
@@ -64,21 +50,15 @@ def verify_subsampler_params(*sizes: int, seed: int) -> None:
         raise TypeError("seed should be an integer")
 
 
-def verify_cell_integrity(
-    a_sa: tuple[torch.Tensor, torch.Tensor],
-    b_sb: tuple[torch.Tensor, torch.Tensor],
-    x_sx: tuple[torch.Tensor, torch.Tensor],
-) -> None:
+def verify_cell(a_sa: tuple[Tensor, Tensor], b_sb: tuple[Tensor, Tensor], x_sx: tuple[Tensor, Tensor]) -> None:
     """Assert the integrity of a cell."""
     (a, sa), (b, sb), (x, sx) = a_sa, b_sb, x_sx
-    if not (
-        (a.ndim == b.ndim == x.ndim == NDIM)
-        and (a.size(2) == b.size(2) == x.size(2))
-        and (a.size(0) == sa.size(0))
-        and b.size(0) == sb.size(0)
-        and x.size(0) == sx.size(0)
-    ):
-        raise ValueError("Invalid cell dimensions")
+    if not a.ndim == b.ndim == x.ndim == NDIM:
+        raise ValueError("A, B, and X should be tensors with 3 dimensions")
+    if not a.size(2) == b.size(2) == x.size(2):
+        raise ValueError("A, B, and X should have the same feature dimension")
+    if not (a.size(0) == sa.size(0) and b.size(0) == sb.size(0) and x.size(0) == sx.size(0)):
+        raise ValueError("Invalid size specification")
 
 
 def format_score_levels(levels: list[tuple[str, ...] | str]) -> list[tuple[str, ...]]:

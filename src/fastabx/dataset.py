@@ -110,15 +110,24 @@ def normalize_with_singularity(x: torch.Tensor) -> torch.Tensor:
     return torch.cat([x, border_vect], dim=1)
 
 
+def read_item(item: str | Path) -> pl.DataFrame:
+    """Read an item file."""
+    labels = pl.read_csv(item, separator=" ")
+    if set(labels.columns) != {"#file", "onset", "offset", "#phone", "prev-phone", "next-phone", "speaker"}:
+        raise ValueError("Invalid item file")
+    return labels
+
+
 def load_data_from_item(
     paths: dict[str, Path],
-    metadata: pl.DataFrame,
+    labels: pl.DataFrame,
     frequency: int,
     feature_maker: FeatureMaker,
     *,
     normalize: bool = True,
 ) -> tuple[dict[int, tuple[int, int]], torch.Tensor]:
     """Load all data in memory. Return a dictionary of indices and a tensor of data."""
+    metadata = labels[["#file", "onset", "offset"]].with_row_index()
     start = (pl.col("onset") * frequency - 0.5).ceil().cast(pl.Int64).alias("start")
     end = (pl.col("offset") * frequency - 0.5).floor().cast(pl.Int64).alias("end")
     length = (end - start).alias("length")
@@ -129,9 +138,9 @@ def load_data_from_item(
     by_file_lazy = lazy.select("#file", "start", "end").group_by("#file", maintain_order=True).agg("start", "end")
     indices, by_file = pl.collect_all([indices_lazy, by_file_lazy])
 
-    data = []
+    data, device = [], Environment().device
     for fileid, start_indices, end_indices in tqdm(by_file.iter_rows(), desc="Building dataset", total=len(by_file)):
-        features = feature_maker(paths[fileid]).detach().cpu()
+        features = feature_maker(paths[fileid]).detach().to(device)
         if normalize:
             features = normalize_with_singularity(features)
         data += [features[start:end] for start, end in zip(start_indices, end_indices, strict=True)]
@@ -164,12 +173,9 @@ class Dataset:
         extension: str = ".pt",
     ) -> "Dataset":
         """Create a dataset from an item file."""
-        labels = pl.read_csv(item, separator=" ")
-        if set(labels.columns) != {"#file", "onset", "offset", "#phone", "prev-phone", "next-phone", "speaker"}:
-            raise ValueError("Invalid item file")
-        metadata = labels[["#file", "onset", "offset"]].with_row_index()
+        labels = read_item(item)
         paths = find_all_files(root, extension)
-        indices, data = load_data_from_item(paths, metadata, frequency, feature_maker, normalize=normalize)
+        indices, data = load_data_from_item(paths, labels, frequency, feature_maker, normalize=normalize)
         return Dataset(labels=labels, accessor=InMemoryAccessor(indices, data))
 
     @classmethod
@@ -204,3 +210,9 @@ class Dataset:
         if len(features_df) != len(labels_df):
             raise ValueError("features and labels must have the same length")
         return cls.from_dataframe(pl.concat((features_df, labels_df), how="horizontal"), features_df.columns)
+
+
+def dummy_dataset_from_item(item: str | Path) -> Dataset:
+    """To debug."""
+    labels = read_item(item).with_columns(pl.lit(0).alias("dummy"))
+    return Dataset.from_dataframe(labels, "dummy")

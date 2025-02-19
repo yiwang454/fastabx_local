@@ -9,22 +9,23 @@ from fastabx.verify import verify_subsampler_params
 def subsample_each_cell(df: pl.LazyFrame, size: int, seed: int = 0) -> pl.LazyFrame:
     """Subsample each cell by taking at most ``size`` instances of A, B, and X independently."""
     return (
-        df.with_columns(group=pl.concat_str(~cs.starts_with("index"), separator="-"))
-        .with_columns(cs.starts_with("index").explode().shuffle(seed=seed).implode().over("group").list.head(size))
-        .select(cs.exclude("group"))
+        df.with_columns(pl.concat_str(~cs.starts_with("index"), separator="-").alias("__group"))
+        .with_columns(cs.starts_with("index").explode().shuffle(seed=seed).implode().over("__group").list.head(size))
+        .select(cs.exclude("__group"))
     )
 
 
 def subsample_across_group(df: pl.LazyFrame, size: int, seed: int = 0) -> pl.LazyFrame:
     """Subsample each group of 'across' condition by taking ``size`` possible values for X in each group."""
     x_cols = [c for c in df.collect_schema() if c.endswith("_x") and c != "index_x"]
-    df = df.with_columns(group=pl.concat_str(~(cs.starts_with("index") | cs.ends_with("_x")), separator="-"))
+    to_ignore = cs.starts_with("index") | cs.ends_with("_x")
+    df = df.with_columns(pl.concat_str(~to_ignore).alias("__group"), separator="-")
     return (
-        df.group_by("group", maintain_order=True)
+        df.group_by("__group", maintain_order=True)
         .agg((cs.ends_with("_x") & (~cs.starts_with("index"))).unique().shuffle(seed).head(size))
         .explode(x_cols)
-        .join(df, on=["group", *x_cols], how="left")
-        .select(cs.exclude("group"))
+        .join(df, on=["__group", *x_cols], how="left")
+        .select(cs.exclude("__group"))
     )
 
 

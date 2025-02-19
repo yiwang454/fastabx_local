@@ -7,7 +7,7 @@ import polars as pl
 import polars.selectors as cs
 
 from fastabx.dataset import Batch
-from fastabx.verify import verify_cell_integrity
+from fastabx.verify import verify_cell
 
 MIN_A_LEN = 2  # Minimum length of A in the ABX task.
 
@@ -24,7 +24,7 @@ class Cell:
     is_symmetric: bool
 
     def __post_init__(self) -> None:
-        verify_cell_integrity((self.a.data, self.a.sizes), (self.b.data, self.b.sizes), (self.x.data, self.x.sizes))
+        verify_cell((self.a.data, self.a.sizes), (self.b.data, self.b.sizes), (self.x.data, self.x.sizes))
 
     @cached_property
     def num_triplets(self) -> int:
