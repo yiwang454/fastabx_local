@@ -11,7 +11,7 @@ import torch
 def default_engine() -> Literal["cpu", "gpu"]:
     """Engine is 'gpu' if available, else 'cpu'."""
     try:
-        pl.LazyFrame().collect(engine="gpu")
+        pl.LazyFrame({"x": 1}).collect(engine="gpu")
     except (ModuleNotFoundError, pl.exceptions.ComputeError):
         return "cpu"
     else:
