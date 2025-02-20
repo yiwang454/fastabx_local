@@ -1,10 +1,14 @@
 """Sphinx configuration."""  # noqa: INP001
 
+import functools
+import inspect
 from datetime import UTC, datetime
 from importlib.metadata import metadata
+from pathlib import Path
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.linkcode",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
     "sphinx_design",
@@ -20,3 +24,36 @@ release = version
 autodoc_typehints = "description"
 exclude_patterns = ["build"]
 html_theme = "furo"
+
+
+@functools.cache
+def linkcode_package() -> Path:
+    """Path to the source of the package."""
+    pkg = inspect.getsourcefile(__import__(project))
+    if pkg is None:
+        raise ValueError("Cannot retrieve source of project")
+    return Path(pkg).parent
+
+
+def linkcode_resolve(domain: str, info: dict) -> str | None:
+    """Return the URL to source code."""
+    if domain != "py" or not info["module"]:
+        return None
+    pkg = linkcode_package()
+    module = __import__(info["module"], fromlist=[""])
+    obj = module
+    for part in info["fullname"].split("."):
+        obj = getattr(obj, part)
+    obj = inspect.unwrap(obj)
+    if isinstance(obj, property):
+        obj = obj.fget
+    elif isinstance(obj, functools.cached_property):
+        obj = obj.func
+    fn = inspect.getsourcefile(obj)
+    if fn is None:
+        raise ValueError("Could not retrieve some code.")
+    file = str(Path(fn).relative_to(pkg))
+    source, start = inspect.getsourcelines(obj)
+    end = start + len(source) - 1
+    version = "main"  # To update to find correct version
+    return f"https://github.com/bootphon/fastabx/blob/{version}/src/fastabx/{file}#L{start}-L{end}"
