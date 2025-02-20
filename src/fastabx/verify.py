@@ -24,6 +24,30 @@ class LabelSuffixError(ValueError):
         super().__init__(f"Invalid label: {name}. Cannot end by _a, _b, or _x.")
 
 
+class EmptyDataPointsError(ValueError):
+    """Empty data points in the dataset."""
+
+    max_print_size: int = 10
+
+    def __init__(self, empty: list[str]) -> None:
+        super().__init__(
+            f"{len(empty)} empty elements were found in the dataset (with indices ["
+            + ", ".join(empty[: self.max_print_size])
+            + (", ..." if len(empty) > self.max_print_size else "")
+            + "])"
+        )
+
+
+def verify_empty_datapoints(indices: dict[int, tuple[int, int]]) -> None:
+    """Check if some datapoints are empty by checking the start and end indices."""
+    empty = []
+    for key, (start, end) in indices.items():
+        if end <= start:
+            empty.append(str(key))
+    if empty:
+        raise EmptyDataPointsError(empty)
+
+
 def verify_task_conditions(conditions: list[str]) -> None:
     """Conditions should be unique strings."""
     if len(conditions) != len(set(conditions)):

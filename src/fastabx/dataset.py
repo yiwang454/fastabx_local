@@ -17,6 +17,7 @@ from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
 from fastabx.utils import Environment
+from fastabx.verify import verify_empty_datapoints
 
 type FeatureMaker = Callable[[str | Path], torch.Tensor]
 type ArrayLike = npt.ArrayLike
@@ -62,6 +63,7 @@ class InMemoryAccessor(DataAccessor):
     def __init__(self, indices: dict[int, tuple[int, int]], data: torch.Tensor) -> None:
         self.device = Environment().device
         self.indices = indices
+        verify_empty_datapoints(self.indices)
         self.data = data.to(self.device)
 
     def __repr__(self) -> str:
