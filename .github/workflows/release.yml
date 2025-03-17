@@ -43,7 +43,7 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         id: cuda-toolkit-windows
         shell: pwsh
-        run: scripts/setup_cuda.ps1
+        run: packaging/setup_cuda.ps1
         env:
             INPUT_CUDA_VERSION: ${{ matrix.cuda-version }}
 
