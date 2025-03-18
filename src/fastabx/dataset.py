@@ -117,10 +117,19 @@ class InvalidItemFileError(Exception):
 
 def read_item(item: str | Path) -> pl.DataFrame:
     """Read an item file."""
-    labels = pl.read_csv(item, separator=" ")
-    if set(labels.columns) != {"#file", "onset", "offset", "#phone", "prev-phone", "next-phone", "speaker"}:
-        raise InvalidItemFileError
-    return labels
+    schema = {
+        "#file": pl.String,
+        "onset": pl.Float32,
+        "offset": pl.Float32,
+        "#phone": pl.String,
+        "prev-phone": pl.String,
+        "next-phone": pl.String,
+        "speaker": pl.String,
+    }
+    try:
+        return pl.read_csv(item, separator=" ", schema=schema)
+    except pl.exceptions.ComputeError as error:
+        raise InvalidItemFileError from error
 
 
 def load_data_from_item(
