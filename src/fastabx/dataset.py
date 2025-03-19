@@ -173,7 +173,7 @@ class Dataset:
 
     def normalize_(self) -> Self:
         """L2 normalization of the data."""
-        self.accessor.data = normalize_with_singularity(self.accessor.data)
+        self.accessor.data = normalize_with_singularity(self.accessor.data.cpu()).to(self.accessor.device)
         return self
 
     @classmethod
