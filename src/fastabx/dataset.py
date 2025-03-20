@@ -101,7 +101,7 @@ def normalize_with_singularity(x: torch.Tensor, eps: float = 1e-12) -> torch.Ten
     """Normalize the given vector across the third dimension.
 
     Extend all vectors by eps to put the null vector at the maximal
-    cosine distance from any non-null vector.
+    angular distance from any non-null vector.
     """
     norm = torch.norm(x, dim=1, keepdim=True)
     zero_vals = norm == 0

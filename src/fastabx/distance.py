@@ -25,7 +25,7 @@ def distance_function(name: DistanceName) -> Distance:
         case "euclidean":
             return euclidean_distance
         case "cosine" | "angular":
-            return cosine_distance
+            return angular_distance
         case "kl":
             return kl_distance
         case "kl_symmetric":
@@ -68,7 +68,7 @@ def kl_symmetric_distance(a1: Tensor, a2: Tensor, epsilon: float = 1e-6) -> Tens
     return (0.5 * out1 + 0.5 * out2).view(n1, s1, n2, s2).transpose(1, 2)
 
 
-def cosine_distance(a1: Tensor, a2: Tensor) -> Tensor:
+def angular_distance(a1: Tensor, a2: Tensor) -> Tensor:
     """Angular distance (default). WARNING: a1 and a2 must be normalized."""
     n1, s1, d = a1.size()
     n2, s2, d = a2.size()
