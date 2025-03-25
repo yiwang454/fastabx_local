@@ -132,6 +132,16 @@ def read_item(item: str | Path) -> pl.DataFrame:
         raise InvalidItemFileError from error
 
 
+def item_frontiers(frequency: int) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr]:
+    """Frontiers in the input features and in the concatenated ones."""
+    start = (pl.col("onset") * frequency - 0.5).round(2).ceil().cast(pl.Int64).alias("start")
+    end = (pl.col("offset") * frequency - 0.5).round(2).floor().cast(pl.Int64).alias("end")
+    length = (end - start).alias("length")
+    right = length.cum_sum().alias("right")
+    left = length.cum_sum().shift(1).fill_null(0).alias("left")
+    return start, end, left, right
+
+
 def load_data_from_item(
     paths: dict[str, Path],
     labels: pl.DataFrame,
@@ -140,12 +150,7 @@ def load_data_from_item(
 ) -> tuple[dict[int, tuple[int, int]], torch.Tensor]:
     """Load all data in memory. Return a dictionary of indices and a tensor of data."""
     metadata = labels[["#file", "onset", "offset"]].with_row_index()
-    start = (pl.col("onset") * frequency - 0.5).round(2).ceil().cast(pl.Int64).alias("start")
-    end = (pl.col("offset") * frequency - 0.5).round(2).floor().cast(pl.Int64).alias("end")
-    length = (end - start).alias("length")
-    right = length.cum_sum().alias("right")
-    left = length.cum_sum().shift(1).fill_null(0).alias("left")
-    lazy = metadata.lazy().sort("#file", maintain_order=True).with_columns(start, end, left, right)
+    lazy = metadata.lazy().sort("#file", maintain_order=True).with_columns(*item_frontiers(frequency))
     indices_lazy = lazy.select("left", "right", "index").sort("index").select("left", "right")
     by_file_lazy = lazy.select("#file", "start", "end").group_by("#file", maintain_order=True).agg("start", "end")
     indices, by_file = pl.collect_all([indices_lazy, by_file_lazy])
@@ -226,7 +231,9 @@ class Dataset:
         return cls.from_dataframe(pl.concat((features_df, labels_df), how="horizontal"), features_df.columns)
 
 
-def dummy_dataset_from_item(item: str | Path) -> Dataset:
+def dummy_dataset_from_item(item: str | Path, frequency: int | None) -> Dataset:
     """To debug."""
     labels = read_item(item).with_columns(pl.lit(0).alias("dummy"))
+    if frequency is not None:
+        labels = labels.with_columns(*item_frontiers(frequency))
     return Dataset.from_dataframe(labels, "dummy")

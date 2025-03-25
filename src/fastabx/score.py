@@ -69,7 +69,7 @@ class Score:
         nested = [name for name, dtype in self.cells.schema.items() if dtype == pl.List]
         (self.cells.select(cs.exclude(nested)) if nested else self.cells).write_csv(file)
 
-    def details(self, *, levels: Sequence[tuple[str, ...] | str]) -> pl.DataFrame:
+    def details(self, *, levels: Sequence[tuple[str, ...] | str] | None) -> pl.DataFrame:
         """Collapse the scored cells and return the final scores and sizes for each (A, B) pairs.
 
         :param levels: List of levels to collapse. The order matters a lot.
