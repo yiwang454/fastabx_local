@@ -35,6 +35,21 @@ class CollapseError(Exception):
         super().__init__(msg)
 
 
+def score_details(cells: pl.DataFrame, *, levels: Sequence[tuple[str, ...] | str] | None) -> pl.DataFrame:
+    """Collapse the scored cells and return the final scores and sizes for each (A, B) pairs."""
+    if levels is None:
+        if len(set(cells.columns) - {"index", "index_b", "score", "size"}) != 2:  # noqa: PLR2004
+            raise CollapseError(are_set=False)
+        levels = []
+    cells = cells.select(~(cs.starts_with("index") | cs.ends_with("_x")))
+    levels_in_tuples = format_score_levels(levels)
+    verify_score_levels(cells.columns, levels_in_tuples)
+    for level in levels_in_tuples:
+        group_key = cs.exclude("score", "size", *level)
+        cells = cells.group_by(group_key, maintain_order=True).agg(pl.col("score").mean(), pl.col("size").sum())
+    return cells
+
+
 class Score:
     """Compute the score of a :py:class:`.Task` using a given distance specified by ``distance_name``."""
 
@@ -74,17 +89,7 @@ class Score:
 
         :param levels: List of levels to collapse. The order matters a lot.
         """
-        if levels is None:
-            if len(set(self.cells.columns) - {"index", "index_b", "score", "size"}) != 2:  # noqa: PLR2004
-                raise CollapseError(are_set=False)
-            levels = []
-        cells = self.cells.select(~(cs.starts_with("index") | cs.ends_with("_x")))
-        levels_in_tuples = format_score_levels(levels)
-        verify_score_levels(cells.columns, levels_in_tuples)
-        for level in levels_in_tuples:
-            group_key = cs.exclude("score", "size", *level)
-            cells = cells.group_by(group_key, maintain_order=True).agg(pl.col("score").mean(), pl.col("size").sum())
-        return cells
+        return score_details(self.cells, levels=levels)
 
     def collapse(self, *, levels: Sequence[tuple[str, ...] | str] | None = None, weighted: bool = False) -> float:
         """Collapse the scored cells into the final score.
