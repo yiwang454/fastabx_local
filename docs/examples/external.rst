@@ -20,15 +20,15 @@ With torchaudio
 
     layer = 11
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    bundle = torchaudio.pipelines.HUBERT_base
-    model = bundle.get_model().to(device)
+    bundle = torchaudio.pipelines.HUBERT_BASE
+    model = bundle.get_model().eval().to(device)
 
 
     def maker(path: str) -> torch.Tensor:
         x, sr = torchaudio.load(str(path))
         assert sr == bundle.sample_rate
         features, _ = model.extract_features(x.to(device))
-        return features[layer - 1]
+        return features[layer - 1].squeeze()
 
 
     abx = zerospeech_abx(
