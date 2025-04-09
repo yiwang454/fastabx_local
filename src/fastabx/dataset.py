@@ -119,23 +119,28 @@ def read_item(item: str | Path) -> pl.DataFrame:
     """Read an item file."""
     schema = {
         "#file": pl.String,
-        "onset": pl.Float32,
-        "offset": pl.Float32,
+        "onset": pl.String,
+        "offset": pl.String,
         "#phone": pl.String,
         "prev-phone": pl.String,
         "next-phone": pl.String,
         "speaker": pl.String,
     }
     try:
-        return pl.read_csv(item, separator=" ", schema=schema)
+        return pl.read_csv(item, separator=" ", schema=schema).with_columns(
+            pl.col("onset").str.to_decimal(), pl.col("offset").str.to_decimal()
+        )
     except pl.exceptions.ComputeError as error:
         raise InvalidItemFileError from error
 
 
-def item_frontiers(frequency: int, *, precision: int = 5) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr]:
+def item_frontiers(frequency: float) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr]:
     """Frontiers [start, end[ in the input features and in the concatenated ones."""
-    start = (pl.col("onset") * frequency - 0.5).round(precision).ceil().cast(pl.Int64).alias("start")
-    end = (pl.col("offset") * frequency - 0.5).round(precision).floor().cast(pl.Int64).alias("end")
+    # Remove the cast to float and -0.5 once RoundMode "half_ceil" and "half_floor" are added to polars round method
+    # (or "half_away_from_zero" and "half_to_zero")
+    # See: https://github.com/pola-rs/polars/issues/21800
+    start = (pl.col("onset") * frequency - 0.5).cast(pl.Float64).ceil().cast(pl.Int64).alias("start")
+    end = (pl.col("offset") * frequency - 0.5).cast(pl.Float64).floor().cast(pl.Int64).alias("end")
     length = (end - start).alias("length")
     right = length.cum_sum().alias("right")
     left = length.cum_sum().shift(1).fill_null(0).alias("left")
