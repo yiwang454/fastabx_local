@@ -132,10 +132,10 @@ def read_item(item: str | Path) -> pl.DataFrame:
         raise InvalidItemFileError from error
 
 
-def item_frontiers(frequency: int) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr]:
-    """Frontiers in the input features and in the concatenated ones."""
-    start = (pl.col("onset") * frequency - 0.5).round(2).ceil().cast(pl.Int64).alias("start")
-    end = (pl.col("offset") * frequency - 0.5).round(2).floor().cast(pl.Int64).alias("end")
+def item_frontiers(frequency: int, *, precision: int = 5) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr]:
+    """Frontiers [start, end[ in the input features and in the concatenated ones."""
+    start = (pl.col("onset") * frequency - 0.5).round(precision).ceil().cast(pl.Int64).alias("start")
+    end = (pl.col("offset") * frequency - 0.5).round(precision).floor().cast(pl.Int64).alias("end")
     length = (end - start).alias("length")
     right = length.cum_sum().alias("right")
     left = length.cum_sum().shift(1).fill_null(0).alias("left")
