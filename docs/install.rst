@@ -23,7 +23,7 @@ Build from source
 
 .. code-block:: console
 
-   $ git clone git@github.com/bootphon/fastabx.git
+   $ git clone git@github.com:bootphon/fastabx.git
    $ cd fastabx
 
 2. Run the following command to build a wheel with ``uv``:
