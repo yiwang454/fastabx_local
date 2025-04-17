@@ -55,7 +55,7 @@ def h5features_to_torch(path: Path, root_features: Path, root_times: Path) -> No
     root_times.mkdir(exist_ok=True, parents=True)
     times, features = h5features.read(path)
     for item, feats in tqdm(features.items()):
-        torch.save(torch.as_tensor(feats), root_features / f"{item}.pt")
+        torch.save(torch.as_tensor(feats, dtype=torch.float32), root_features / f"{item}.pt")
         torch.save(torch.as_tensor(times[item], dtype=torch.float64), root_times / f"{item}.pt")
 
 
