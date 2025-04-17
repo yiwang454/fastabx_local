@@ -10,14 +10,11 @@ Python API
 
 .. code-block:: python
 
-    import torch
     from fastabx import Dataset, Score, Subsampler, Task
 
 
-    item, features = "./triphone-dev-clean.item", "./features"
-    frequency, maker = 50, torch.load
-
-    dataset = Dataset.from_item(item, features, frequency, maker)
+    item, features, frequency = "./triphone-dev-clean.item", "./features", 50
+    dataset = Dataset.from_item(item, features, frequency)
     task = Task(dataset, on="#phone", by=["next-phone", "prev-phone", "speaker"], subsampler=Subsampler())
     score = Score(task, "cosine")
     print(score.collapse(levels=[("next-phone", "prev-phone"), "speaker"]))

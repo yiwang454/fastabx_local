@@ -42,3 +42,8 @@ def load_dtw_extension() -> None:
         )
         raise ImportError(msg)
     from . import _C  # type: ignore[attr-defined] # noqa: F401
+
+
+def with_librilight_bug() -> bool:
+    """Whether to reproduce the results from LibriLight ABX or not."""
+    return os.getenv("FASTABX_WITH_LIBRILIGHT_BUG", "0") == "1"

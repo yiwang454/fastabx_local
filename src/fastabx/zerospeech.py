@@ -49,7 +49,7 @@ def zerospeech_abx(  # noqa: PLR0913
     :param extension: the filename extension of the files to process in ``root``, default is ".pt"
     :param seed: the random seed for the subsampling, default is 0
     """
-    dataset = Dataset.from_item(item, root, frequency, feature_maker, extension=extension)
+    dataset = Dataset.from_item(item, root, frequency, feature_maker=feature_maker, extension=extension)
     by: list[str] | None
     across: list[str] | None
     match (speaker, context):

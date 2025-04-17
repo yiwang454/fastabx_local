@@ -16,7 +16,7 @@ from polars.interchange.protocol import SupportsInterchange
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
-from fastabx.utils import Environment
+from fastabx.utils import Environment, with_librilight_bug
 from fastabx.verify import verify_empty_datapoints
 
 type FeatureMaker = Callable[[str | Path], torch.Tensor]
@@ -141,6 +141,8 @@ def item_frontiers(frequency: float) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr
     # See: https://github.com/pola-rs/polars/issues/21800
     start = (pl.col("onset") * frequency - 0.5).cast(pl.Float64).ceil().cast(pl.Int64).alias("start")
     end = (pl.col("offset") * frequency - 0.5).cast(pl.Float64).floor().cast(pl.Int64).alias("end")
+    if not with_librilight_bug():
+        end += 1
     length = (end - start).alias("length")
     right = length.cum_sum().alias("right")
     left = length.cum_sum().shift(1).fill_null(0).alias("left")
@@ -165,6 +167,41 @@ def load_data_from_item(
         features = feature_maker(paths[fileid]).detach().to(device)
         data += [features[start:end] for start, end in zip(start_indices, end_indices, strict=True)]
     return dict(enumerate(indices.rows())), torch.cat(data, dim=0)
+
+
+class TimesArrayDimensionError(ValueError):
+    """To raise if the times array is not 1D."""
+
+    def __init__(self) -> None:
+        super().__init__("Only 1D times array are supported")
+
+
+def load_data_from_item_with_times(
+    paths_features: dict[str, Path],
+    paths_times: dict[str, Path],
+    labels: pl.DataFrame,
+) -> tuple[dict[int, tuple[int, int]], torch.Tensor]:
+    """Load all data in memory using features and times array. This is smaller than using a predefined frequency."""
+    metadata = labels[["#file", "onset", "offset"]].with_row_index()
+    by_file = (
+        metadata.sort("#file", maintain_order=True)
+        .group_by("#file", maintain_order=True)
+        .agg("index", "onset", "offset")
+    )
+    data, device, all_indices, right = [], Environment().device, {}, 0
+    decimals = by_file["onset"].dtype.inner.scale
+    for fileid, indices, onsets, offsets in tqdm(by_file.iter_rows(), desc="Building dataset", total=len(by_file)):
+        features = torch.load(paths_features[fileid], map_location=device).detach()
+        times = torch.load(paths_times[fileid]).round(decimals=decimals)
+        if times.ndim > 1:
+            raise TimesArrayDimensionError
+        for index, onset, offset in zip(indices, onsets, offsets, strict=True):
+            mask = torch.where(torch.logical_and(float(onset) <= times, times <= float(offset)))[0]
+            data.append(features[mask])
+            left = right
+            right += len(mask)
+            all_indices[index] = (left, right)
+    return all_indices, torch.cat(data, dim=0)
 
 
 @dataclass(frozen=True)
@@ -192,14 +229,26 @@ class Dataset:
         item: str | Path,
         root: str | Path,
         frequency: int,
-        feature_maker: FeatureMaker,
         *,
+        feature_maker: FeatureMaker = torch.load,
         extension: str = ".pt",
     ) -> "Dataset":
         """Create a dataset from an item file."""
         labels = read_item(item)
         paths = find_all_files(root, extension)
         indices, data = load_data_from_item(paths, labels, frequency, feature_maker)
+        return Dataset(labels=labels, accessor=InMemoryAccessor(indices, data))
+
+    @classmethod
+    def from_item_with_times(cls, item: str | Path, features: str | Path, times: str | Path) -> "Dataset":
+        """Create a dataset from an item file.
+
+        Use arrays containing the times associated to the features instead of a given frequency.
+        """
+        labels = read_item(item)
+        paths_features = find_all_files(features, ".pt")
+        paths_times = find_all_files(times, ".pt")
+        indices, data = load_data_from_item_with_times(paths_features, paths_times, labels)
         return Dataset(labels=labels, accessor=InMemoryAccessor(indices, data))
 
     @classmethod

@@ -26,12 +26,16 @@ exclude_patterns = ["build"]
 html_theme = "furo"
 
 
+class SourceCodeError(ValueError):
+    """Some part of the source code cannot be found."""
+
+
 @functools.cache
 def linkcode_package() -> Path:
     """Path to the source of the package."""
     pkg = inspect.getsourcefile(__import__(project))
     if pkg is None:
-        raise ValueError("Cannot retrieve source of project")
+        raise SourceCodeError
     return Path(pkg).parent
 
 
@@ -51,7 +55,7 @@ def linkcode_resolve(domain: str, info: dict) -> str | None:
         obj = obj.func
     fn = inspect.getsourcefile(obj)
     if fn is None:
-        raise ValueError("Could not retrieve some code.")
+        raise SourceCodeError
     file = str(Path(fn).relative_to(pkg))
     source, start = inspect.getsourcelines(obj)
     end = start + len(source) - 1
