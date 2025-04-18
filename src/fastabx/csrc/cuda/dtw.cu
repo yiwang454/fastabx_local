@@ -112,6 +112,7 @@ torch::Tensor dtw_cuda(torch::Tensor distances) {
   auto cost = torch::zeros({1, 1, N, M}, options);
   auto out = torch::zeros({1, 1}, options);
 
+  TORCH_CHECK(N > 0 && M > 0, "Empty input tensor");
   TORCH_CHECK(N < MAX_DIAG_LEN, "Diagonal too large to use CUDA shared memory");
   const int num_threads = N > 1024 ? 1024 : N;
   dtw_wavefront_kernel<<<1, num_threads>>>(
@@ -138,6 +139,7 @@ torch::Tensor dtw_batch_cuda(torch::Tensor distances, torch::Tensor sx, torch::T
   auto cost = torch::zeros({nx, ny, max_x, max_y}, options);
   auto out = torch::zeros({nx, ny}, options);
 
+  TORCH_CHECK(nx > 0 && ny > 0 && max_x > 0 && max_y > 0, "Empty input tensor");
   TORCH_CHECK(max_x < MAX_DIAG_LEN, "Diagonal too large to use CUDA shared memory");
   const dim3 num_blocks(nx, ny);
   const int num_threads = max_x > 1024 ? 1024 : max_x;

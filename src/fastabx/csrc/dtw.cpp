@@ -26,6 +26,8 @@ namespace fastabx {
 float _dtw_cpu(torch::Tensor distances) {
   const auto N = distances.size(0);
   const auto M = distances.size(1);
+  TORCH_CHECK(N > 0 && M > 0, "Empty input tensor");
+
   const auto options = torch::TensorOptions().dtype(torch::kFloat32).device(distances.device());
   const auto distances_a = distances.accessor<float, 2>();
   auto cost = torch::zeros({N, M}, options);
