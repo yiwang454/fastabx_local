@@ -149,6 +149,20 @@ def item_frontiers(frequency: float) -> tuple[pl.Expr, pl.Expr, pl.Expr, pl.Expr
     return start, end, left, right
 
 
+class FeaturesSizeError(ValueError):
+    """To raise if the features size is not correct."""
+
+    def __init__(self, fileid: str, start: int, end: int, actual: int) -> None:
+        super().__init__(
+            f"Input features length is not correct for file {fileid}. It has a length {actual}, "
+            f"but we are slicing between [{start}, {end}[.\n"
+            f"The most common reason for this is that there is one frame missing in the features, because "
+            f"of how the convolutional layers are defined in your model and because the phoneme under consideration "
+            f"is at the very end of the file. You can either add padding to the convolutions, or add a bit of silence "
+            f"at the end of the audio file."
+        )
+
+
 def load_data_from_item(
     paths: dict[str, Path],
     labels: pl.DataFrame,
@@ -165,7 +179,10 @@ def load_data_from_item(
     data, device = [], Environment().device
     for fileid, start_indices, end_indices in tqdm(by_file.iter_rows(), desc="Building dataset", total=len(by_file)):
         features = feature_maker(paths[fileid]).detach().to(device)
-        data += [features[start:end] for start, end in zip(start_indices, end_indices, strict=True)]
+        for start, end in zip(start_indices, end_indices, strict=True):
+            if start < 0 or end > features.size(0):
+                raise FeaturesSizeError(fileid, start, end, features.size(0))
+            data.append(features[start:end])
     return dict(enumerate(indices.rows())), torch.cat(data, dim=0)
 
 
