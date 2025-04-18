@@ -2,8 +2,8 @@ name: Push to Gitlab Workflow
 
 on:
   push:
-    tags:
-      - "*"
+    branches:
+      - main
 
 jobs:
   push:

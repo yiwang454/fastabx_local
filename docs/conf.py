@@ -24,6 +24,7 @@ release = version
 autodoc_typehints = "description"
 exclude_patterns = ["build"]
 html_theme = "furo"
+mathjax3_config = {"tex": {"macros": {"onset": "t_\\text{on}", "offset": "t_\\text{off}"}}}
 
 
 class SourceCodeError(ValueError):
