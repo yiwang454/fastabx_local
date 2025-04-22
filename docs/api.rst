@@ -54,3 +54,13 @@ DTW
 
 .. autofunction:: fastabx.dtw.dtw
 .. autofunction:: fastabx.dtw.dtw_batch
+
+Environment variables
+=====================
+
+.. _librilight-bug:
+
+- :code:`FASTABX_WITH_LIBRILIGHT_BUG`: If set to 1, changes the behaviour of :meth:`.Dataset.from_item` to
+  match Libri-Light. Every feature will now be one frame shorter. This should be set only if you want
+  to replicate previous results obtained with Libri-Light / ZeroSpeech 2021. See :ref:`slicing` for more details
+  on how features are sliced. 

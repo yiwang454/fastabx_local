@@ -22,6 +22,7 @@ version = metadata(project)["Version"]
 release = version
 
 autodoc_typehints = "description"
+add_function_parentheses = False
 exclude_patterns = ["build"]
 html_theme = "furo"
 mathjax3_config = {"tex": {"macros": {"onset": "t_\\text{on}", "offset": "t_\\text{off}"}}}

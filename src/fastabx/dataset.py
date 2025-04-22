@@ -206,7 +206,7 @@ def load_data_from_item_with_times(
         .agg("index", "onset", "offset")
     )
     data, device, all_indices, right = [], Environment().device, {}, 0
-    decimals = by_file["onset"].dtype.inner.scale
+    decimals = by_file["onset"].dtype.inner.scale  # type: ignore[attr-defined]
     for fileid, indices, onsets, offsets in tqdm(by_file.iter_rows(), desc="Building dataset", total=len(by_file)):
         features = torch.load(paths_features[fileid], map_location=device).detach()
         times = torch.load(paths_times[fileid]).round(decimals=decimals)
@@ -250,7 +250,11 @@ class Dataset:
         feature_maker: FeatureMaker = torch.load,
         extension: str = ".pt",
     ) -> "Dataset":
-        """Create a dataset from an item file."""
+        """Create a dataset from an item file.
+
+        If you want to keep the Libri-Light bug to reproduce previous results,
+        set the environment variable FASTABX_WITH_LIBRILIGHT_BUG=1.
+        """
         labels = read_item(item)
         paths = find_all_files(root, extension)
         indices, data = load_data_from_item(paths, labels, frequency, feature_maker)

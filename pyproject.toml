@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fastabx"
 version = "0.2.1"
-description = "Fast ABX"
+description = "A library for efficient computation of ABX discriminability"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Maxime Poli" }]
@@ -94,6 +94,9 @@ ignore = [
 
 [tool.ruff.lint.flake8-self]
 ignore-names = ["_check"]
+
+[tool.typos]
+default.extend-words = { IY = "IY" }
 
 [tool.setuptools]
 license-files = [] # https://github.com/pypa/setuptools/issues/4759

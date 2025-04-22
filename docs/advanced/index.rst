@@ -1,0 +1,8 @@
+========
+Advanced
+========
+
+.. toctree::
+
+	comparison
+	slicing

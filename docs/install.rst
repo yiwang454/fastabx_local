@@ -19,11 +19,13 @@ fastabx is available on Linux x86-64 (with glibc 2.34 or later [#glibc]_), macOS
 Build from source
 =================
 
+To build a wheel:
+
 1. Clone the repository:
 
 .. code-block:: console
 
-   $ git clone git@github.com:bootphon/fastabx.git
+   $ git clone https://github.com/bootphon/fastabx.git
    $ cd fastabx
 
 2. Run the following command to build a wheel with ``uv``:
