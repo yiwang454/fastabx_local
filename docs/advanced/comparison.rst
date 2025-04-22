@@ -4,12 +4,6 @@
 Coming from other libraries
 ============================
 
-There are two other libraries:
-ABXpy and libri-light ABX.
-
-ABXpy was used for ZeroSpeech challenges 2015, 2017, 2019
-and libri-light ABX for ZeroSpeech 2021, and update in Hallap.
-
 ABXpy
 =====
 
@@ -42,7 +36,7 @@ as those provided to the Libri-Light codebase.
 
 .. warning::
   There is a bug in the Libri-Light (and ZeroSpeech 2021) ABX codebase.
-  When slicing the features to find the frames being the "onset" and "offset" of the phoneme / triphone,
+  When slicing the features to find the frames between the "onset" and "offset" of the phoneme / triphone,
   the end index is incorrect. The features have always one frame less than what they should.
   This is especially problematic for model that have large features (40 or 80 ms).
   The bug is fixed in fastabx, but if you want to still keep the Libri-Light behaviour, set

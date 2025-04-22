@@ -88,7 +88,7 @@ or they can aggregate by averaging across subsequent attributes (with :code:`lev
 CLI
 ===
 
-This package also provides a command line interface, a simple wrapper that exposes the `zerospeech_abx` function.
+This package also provides a command line interface, a simple wrapper that exposes the :func:`.zerospeech_abx` function.
 
 
 .. code-block:: console
