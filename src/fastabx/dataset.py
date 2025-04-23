@@ -297,10 +297,14 @@ class Dataset:
         return cls.from_dataframe(pl.from_dicts(data), feature_columns)
 
     @classmethod
-    def from_numpy(cls, features: ArrayLike, labels: Mapping[str, Sequence[object]]) -> "Dataset":
+    def from_numpy(
+        cls,
+        features: ArrayLike,
+        labels: Mapping[str, Sequence[object]] | SupportsInterchange,
+    ) -> "Dataset":
         """Create a dataset from the features (numpy array) and the labels (dictionary of sequences)."""
         features_df = pl.from_numpy(np.asarray(features))
-        labels_df = pl.from_dict(labels)
+        labels_df = pl.from_dict(labels) if hasattr(labels, "keys") else pl.from_dataframe(labels.__dataframe__())
         if len(features_df) != len(labels_df):
             raise ValueError
         return cls.from_dataframe(pl.concat((features_df, labels_df), how="horizontal"), features_df.columns)

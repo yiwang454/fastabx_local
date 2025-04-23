@@ -14,7 +14,7 @@ type PoolingName = Literal["mean", "hamming"]
 
 def hamming_window(x: torch.Tensor) -> torch.Tensor:
     """Apply the hamming window on the input Tensor."""
-    window = torch.hamming_window(x.size(0))
+    window = torch.hamming_window(x.size(0), device=x.device)
     return (window @ x) / window.sum()
 
 
