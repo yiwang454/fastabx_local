@@ -193,6 +193,13 @@ class TimesArrayDimensionError(ValueError):
         super().__init__("Only 1D times array are supported")
 
 
+class TimesArrayFrontiersError(ValueError):
+    """To raise if we select nothing."""
+
+    def __init__(self, fileid: str, onset: float, offset: float) -> None:
+        super().__init__(f"No times were found between onset={onset}, offset={offset} for file {fileid}")
+
+
 def load_data_from_item_with_times(
     paths_features: dict[str, Path],
     paths_times: dict[str, Path],
@@ -214,6 +221,8 @@ def load_data_from_item_with_times(
             raise TimesArrayDimensionError
         for index, onset, offset in zip(indices, onsets, offsets, strict=True):
             mask = torch.where(torch.logical_and(float(onset) <= times, times <= float(offset)))[0]
+            if not mask.any():
+                raise TimesArrayFrontiersError(fileid, float(onset), float(offset))
             data.append(features[mask])
             left = right
             right += len(mask)
