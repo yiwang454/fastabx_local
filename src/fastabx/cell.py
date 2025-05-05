@@ -116,7 +116,9 @@ def cell_description(on: str, by: list[str], across: list[str]) -> pl.Expr:
     if by:
         cell += ", " + pl.concat_str([f"BY({c}_abx = " + pl.col(c).cast(pl.String) + ")" for c in by], separator=", ")
     if across:
-        exprs = [f"{c}_ab = " + pl.col(c).cast(pl.String) + f", {c}_x = " + pl.col(c).cast(pl.String) for c in across]
+        exprs = [
+            f"{c}_ab = " + pl.col(c).cast(pl.String) + f", {c}_x = " + pl.col(f"{c}_x").cast(pl.String) for c in across
+        ]
         cell += ", " + pl.format("ACROSS({})", pl.concat_str(exprs, separator=", "))
     return cell
 
