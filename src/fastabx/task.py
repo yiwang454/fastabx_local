@@ -5,7 +5,6 @@ from collections.abc import Generator
 from fastabx.cell import Cell, cell_description, cell_header, cells_on_by, cells_on_by_across
 from fastabx.dataset import Dataset
 from fastabx.subsample import Subsampler
-from fastabx.utils import Environment
 from fastabx.verify import verify_dataset_labels, verify_task_conditions
 
 
@@ -42,7 +41,7 @@ class Task:
         self.cells = cells.with_columns(
             description=cell_description(self.on, self.by, self.across),
             header=cell_header(self.on, self.by, self.across),
-        ).collect(engine=Environment().engine)
+        ).collect()
 
     def __len__(self) -> int:
         return len(self.cells)
