@@ -24,7 +24,7 @@ Wheels are available for Linux x86-64 (glibc 2.34 or later), macOS 14 or later, 
 
 ## Citation
 
-A preprint is available on arXiv: https://arxiv.org/abs/2505.02692
+A preprint is available on arXiv: https://arxiv.org/abs/2505.02692 \
 If you use fastabx in your work, please cite it:
 
 ```bibtex
