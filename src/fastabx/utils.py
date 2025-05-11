@@ -3,7 +3,7 @@
 import os
 import sys
 
-import torch
+import torch.version
 
 
 def load_dtw_extension() -> None:
