@@ -102,5 +102,5 @@ class Score:
         if weighted:
             if levels is not None:
                 raise CollapseError(are_set=True)
-            return self.cells.select(pl_weighted_mean("score", "size")).item()  # type: ignore[no-any-return]
-        return self.details(levels=levels)["score"].mean()  # type: ignore[return-value]
+            return self.cells.select(pl_weighted_mean("score", "size")).item()
+        return self.details(levels=levels)["score"].mean()

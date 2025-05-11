@@ -107,6 +107,8 @@ class InvalidCellError(ValueError):
                 msg = "A, B, and X should have the same feature dimension"
             case CellErrorType.SIZE:
                 msg = "Invalid size specification"
+            case _:
+                msg = None
         super().__init__(msg)
 
 
