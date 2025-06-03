@@ -1,4 +1,4 @@
-#include <omp.h>
+#include <ATen/Parallel.h>
 #include <Python.h>
 #include <torch/library.h>
 #include <torch/types.h>
@@ -84,21 +84,22 @@ torch::Tensor dtw_batch_cpu(torch::Tensor distances, torch::Tensor sx, torch::Te
   auto out = torch::zeros({nx, ny}, options);
   auto out_a = out.accessor<float, 2>();
 
-#pragma omp parallel for schedule(dynamic)
-  for (int64_t i = 0; i < nx; i++) {
-    const int64_t start_j = symmetric ? i : 0;
-    for (int64_t j = start_j; j < ny; j++) {
-      if (symmetric && i == j)
-        continue;
-      const auto sub_distances = distances.index({i, j, torch::indexing::Slice(), torch::indexing::Slice()})
-                                     .slice(0, 0, sx_a[i])
-                                     .slice(1, 0, sy_a[j]);
-      out_a[i][j] = _dtw_cpu(sub_distances);
-      if (symmetric && i != j) {
-        out_a[j][i] = out_a[i][j];
+  at::parallel_for(0, nx, 1, [&](int64_t start, int64_t end) {
+    for (int64_t i = start; i < end; i++) {
+      const int64_t start_j = symmetric ? i : 0;
+      for (int64_t j = start_j; j < ny; j++) {
+        if (symmetric && i == j)
+          continue;
+        const auto sub_distances = distances.index({i, j, torch::indexing::Slice(), torch::indexing::Slice()})
+                                       .slice(0, 0, sx_a[i])
+                                       .slice(1, 0, sy_a[j]);
+        out_a[i][j] = _dtw_cpu(sub_distances);
+        if (symmetric && i != j) {
+          out_a[j][i] = out_a[i][j];
+        }
       }
     }
-  }
+  });
   return out;
 }
 
