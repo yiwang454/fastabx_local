@@ -15,18 +15,7 @@ from fastabx.dataset import dummy_dataset_from_item, find_all_files
 
 
 def num_samples(path: str | Path) -> int:
-    cmd = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-select_streams",
-        "a:0",
-        "-show_entries",
-        "stream=duration_ts",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        str(path),
-    ]
+    cmd = ["soxi", "-s", str(path)]
     try:
         out = subprocess.run(cmd, capture_output=True, check=True, text=True).stdout  # noqa: S603
     except subprocess.CalledProcessError as error:
