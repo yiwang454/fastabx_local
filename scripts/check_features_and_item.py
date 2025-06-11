@@ -1,3 +1,5 @@
+"""Check that the configuration of the convolutions is compatible with the item file."""
+
 # ruff: noqa: D101, D102, D103, PLR2004, T201
 import argparse
 import subprocess
@@ -10,11 +12,6 @@ import polars as pl
 import torch
 
 from fastabx.dataset import dummy_dataset_from_item, find_all_files
-
-
-class AudioLoadingError(RuntimeError):
-    def __init__(self, path: str | Path, error: str) -> None:
-        super().__init__(f"Failed to load audio {path}. Do you have ffmpeg installed?. Failed with: {error}")
 
 
 def num_samples(path: str | Path) -> int:
@@ -33,7 +30,7 @@ def num_samples(path: str | Path) -> int:
     try:
         out = subprocess.run(cmd, capture_output=True, check=True, text=True).stdout  # noqa: S603
     except subprocess.CalledProcessError as error:
-        raise AudioLoadingError(path, error.stderr) from error
+        raise RuntimeError(error.stderr) from error
     return int(out)
 
 
