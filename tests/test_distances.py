@@ -63,7 +63,7 @@ OLD_DISTANCE_FN: dict[str, Callable[[Tensor, Tensor], Tensor]] = {
 
 @pytest.mark.parametrize("name", list(OLD_DISTANCE_FN.keys()))
 @given(n1=BATCH, n2=BATCH, s1=SEQ, s2=SEQ, d=DIM, low=LOW, high_minus_low=HIGH_MINUS_LOW)
-def test_distance_new_implementation(  # noqa: PLR0913
+def test_distance_new_implementation(
     name: DistanceName,
     n1: int,
     n2: int,

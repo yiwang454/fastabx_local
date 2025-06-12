@@ -1,11 +1,12 @@
 """ZeroSpeech ABX evaluation. Reproduces ZeroSpeech 2021."""
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
 import torch
 
-from fastabx.dataset import Dataset, FeatureMaker
+from fastabx.dataset import Dataset
 from fastabx.distance import DistanceName
 from fastabx.score import Score
 from fastabx.subsample import Subsampler
@@ -16,7 +17,7 @@ class InvalidSpeakerOrContextError(ValueError):
     """The speaker or context conditions are not set correctly."""
 
 
-def zerospeech_abx(  # noqa: PLR0913
+def zerospeech_abx(
     item: str | Path,
     root: str | Path,
     *,
@@ -24,7 +25,7 @@ def zerospeech_abx(  # noqa: PLR0913
     context: Literal["within", "any"] = "within",
     distance: DistanceName = "angular",
     frequency: int = 50,
-    feature_maker: FeatureMaker = torch.load,
+    feature_maker: Callable[[str | Path], torch.Tensor] = torch.load,
     max_size_group: int | None = 10,
     max_x_across: int | None = 5,
     extension: str = ".pt",

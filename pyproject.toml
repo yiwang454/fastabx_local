@@ -83,12 +83,13 @@ line-length = 119
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "COM812", # missing-trailing-comma
-    "D105",   # undocumented-magic-method
-    "D107",   # undocumented-public-init
-    "D203",   # incorrect-blank-line-before-class
-    "D213",   # multi-line-summary-second-line
-    "PD901",  # pandas-df-variable-name
+    "COM812",  # missing-trailing-comma
+    "D105",    # undocumented-magic-method
+    "D107",    # undocumented-public-init
+    "D203",    # incorrect-blank-line-before-class
+    "D213",    # multi-line-summary-second-line
+    "PD901",   # pandas-df-variable-name
+    "PLR0913", # too-many-arguments
 ]
 
 [tool.ruff.lint.flake8-self]

@@ -44,9 +44,7 @@ def test_opcheck_dtw_batch_symmetric(n: int, x: int, low: float, high_minus_low:
 
 @given(n=BATCH, m=BATCH, x=DIM, y=DIM, low=LOW, high_minus_low=HIGH_MINUS_LOW)
 @settings(deadline=None)
-def test_opcheck_dtw_batch_not_symmetric(  # noqa: PLR0913
-    n: int, m: int, x: int, y: int, low: float, high_minus_low: float
-) -> None:
+def test_opcheck_dtw_batch_not_symmetric(n: int, m: int, x: int, y: int, low: float, high_minus_low: float) -> None:
     """Verify that dtw_batch can be torch compiled, with symmetric input."""
     sample = make_tensor((n, m, x, y), dtype=torch.float32, low=low, high=high_minus_low + low)
     sx = make_tensor((n,), dtype=torch.long, low=1, high=x)

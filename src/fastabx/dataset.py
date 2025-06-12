@@ -19,7 +19,6 @@ from tqdm import tqdm
 from fastabx.utils import with_librilight_bug
 from fastabx.verify import verify_empty_datapoints
 
-type FeatureMaker = Callable[[str | Path], torch.Tensor]
 type ArrayLike = npt.ArrayLike
 
 
@@ -163,11 +162,11 @@ class FeaturesSizeError(ValueError):
         )
 
 
-def load_data_from_item(
-    paths: dict[str, Path],
+def load_data_from_item[T](
+    mapping: dict[str, T],
     labels: pl.DataFrame,
     frequency: int,
-    feature_maker: FeatureMaker,
+    feature_maker: Callable[[T], torch.Tensor],
 ) -> tuple[dict[int, tuple[int, int]], torch.Tensor]:
     """Load all data in memory. Return a dictionary of indices and a tensor of data."""
     metadata = labels[["#file", "onset", "offset"]].with_row_index()
@@ -178,7 +177,7 @@ def load_data_from_item(
 
     data, device = [], torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for fileid, start_indices, end_indices in tqdm(by_file.iter_rows(), desc="Building dataset", total=len(by_file)):
-        features = feature_maker(paths[fileid]).detach().to(device)
+        features = feature_maker(mapping[fileid]).detach().to(device)
         for start, end in zip(start_indices, end_indices, strict=True):
             if start < 0 or end > features.size(0):
                 raise FeaturesSizeError(fileid, start, end, features.size(0))
@@ -256,7 +255,7 @@ class Dataset:
         root: str | Path,
         frequency: int,
         *,
-        feature_maker: FeatureMaker = torch.load,
+        feature_maker: Callable[[str | Path], torch.Tensor] = torch.load,
         extension: str = ".pt",
     ) -> "Dataset":
         """Create a dataset from an item file.
@@ -279,6 +278,40 @@ class Dataset:
         paths_features = find_all_files(features, ".pt")
         paths_times = find_all_files(times, ".pt")
         indices, data = load_data_from_item_with_times(paths_features, paths_times, labels)
+        return Dataset(labels=labels, accessor=InMemoryAccessor(indices, data))
+
+    @classmethod
+    def from_item_and_units(
+        cls,
+        item: str | Path,
+        units: str | Path,
+        frequency: int,
+        *,
+        audio_key: str = "audio",
+        units_key: str = "units",
+        separator: str = " ",
+    ) -> "Dataset":
+        """Create a dataset from an item file with the units all described in a single JSONL file.
+
+        :param item: Path to the item file.
+        :param units: Path to the JSONL file containing the units.
+        :param frequency: Frequency of the features.
+        :param audio_key: Key in the JSONL file that contains the audio file names.
+        :param units_key: Key in the JSONL file that contains the units.
+        :param separator: Separator used in the units field.
+        """
+        labels = read_item(item)
+        units_df = (
+            pl.scan_ndjson(units)
+            .with_columns(pl.col(audio_key).str.split("/").list.last().str.replace(r"\.[^.]+$", ""))
+            .collect()
+        )
+
+        def feature_maker(idx: int) -> torch.Tensor:
+            return torch.tensor([int(unit) for unit in units_df[idx, units_key].split(separator)]).unsqueeze(1)
+
+        mapping: dict[str, int] = dict(zip(units_df[audio_key], range(len(units_df)), strict=True))
+        indices, data = load_data_from_item(mapping, labels, frequency, feature_maker)
         return Dataset(labels=labels, accessor=InMemoryAccessor(indices, data))
 
     @classmethod
