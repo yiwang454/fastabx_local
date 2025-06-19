@@ -6,7 +6,7 @@ import polars.selectors as cs
 from fastabx.verify import verify_subsampler_params
 
 
-def subsample_each_cell(df: pl.LazyFrame, size: int, seed: int = 0) -> pl.LazyFrame:
+def subsample_each_cell(df: pl.LazyFrame, size: int, seed: int) -> pl.LazyFrame:
     """Subsample each cell by taking at most ``size`` instances of A, B, and X independently."""
     return (
         df.with_columns(pl.concat_str(~cs.starts_with("index"), separator="-").alias("__group"))
@@ -15,7 +15,7 @@ def subsample_each_cell(df: pl.LazyFrame, size: int, seed: int = 0) -> pl.LazyFr
     )
 
 
-def subsample_across_group(df: pl.LazyFrame, size: int, seed: int = 0) -> pl.LazyFrame:
+def subsample_across_group(df: pl.LazyFrame, size: int, seed: int) -> pl.LazyFrame:
     """Subsample each group of 'across' condition by taking ``size`` possible values for X in each group."""
     x_cols = [c for c in df.collect_schema() if c.endswith("_x") and c != "index_x"]
     to_ignore = cs.starts_with("index") | cs.ends_with("_x")
