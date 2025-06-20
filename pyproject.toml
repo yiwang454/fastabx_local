@@ -1,7 +1,7 @@
 [build-system]
 requires = [
-    "setuptools>=75.0.0,<=75.8.2", # Temporary upper bound: https://github.com/pytorch/pytorch/issues/148877
-    "setuptools-scm>=8.1.0",
+    "setuptools>=80.9.0",
+    "setuptools-scm>=8.3.1",
     "torch==2.6.0",
     "numpy>=2.0.2",
     "ninja>=1.11",
@@ -15,12 +15,11 @@ description = "A library for efficient computation of ABX discriminability"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Maxime Poli" }]
-license = { text = "MIT" } # To update to PEP 639 once support is added to setuptools
+license = "MIT"
 keywords = ["speech", "machine learning"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: C++",
     "Programming Language :: Python :: 3 :: Only",
@@ -97,6 +96,3 @@ ignore-names = ["_check"]
 
 [tool.typos]
 default.extend-words = { IY = "IY" }
-
-[tool.setuptools]
-license-files = [] # https://github.com/pypa/setuptools/issues/4759
