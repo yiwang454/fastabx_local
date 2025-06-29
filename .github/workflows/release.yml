@@ -111,7 +111,7 @@ jobs:
           uv venv -p 3.12
           uv pip install setuptools numpy ninja
           uv pip install torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/${{ matrix.torch-backend }}
-          uv build --no-build-isolation
+          uv build --wheel --no-build-isolation
 
       - name: Relabel the Linux wheel
         if: runner.os == 'Linux'
@@ -161,6 +161,9 @@ jobs:
         run: |
           mkdir ./dist
           mv ./artifacts/**/*.whl ./dist
+
+      - name: Build sdist
+        run: uv build --sdist
 
       - name: List artifacts
         run: find ./dist
