@@ -41,8 +41,9 @@ def get_extension() -> Extension:
     )
 
 
-setup(
-    ext_modules=[get_extension()],
-    cmdclass={"build_ext": BuildExtension},
-    options={"bdist_wheel": {"py_limited_api": "cp312"}},
-)
+if __name__ == "__main__":
+    setup(
+        ext_modules=[get_extension()],
+        cmdclass={"build_ext": BuildExtension},
+        options={"bdist_wheel": {"py_limited_api": "cp312"}},
+    )

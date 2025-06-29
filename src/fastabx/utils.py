@@ -1,24 +1,32 @@
 """Various utilities."""
 
+import importlib.resources
+import json
 import os
 import sys
 
-import torch.version
+import torch
+
+
+class PyTorchVersionError(ImportError):
+    """PyTorch version mismatch."""
+
+    def __init__(self, actual: str, expected: str) -> None:
+        super().__init__(
+            f"The DTW extension requires PyTorch {expected}, but you have {actual}. "
+            "Please install the correct version of PyTorch, or install the wheel of fastabx "
+            "from the GitHub release page that matches your PyTorch version."
+        )
 
 
 def load_dtw_extension() -> None:
     """Load the DTW extension.
 
-    On Linux and Windows, we check that PyTorch has been installed with the correct CUDA version.
+    We check that PyTorch has been installed with the correct version.
     """
-    cuda_version = "12.4"
-    if sys.platform in ["linux", "win32"] and torch.version.cuda != cuda_version:
-        msg = (
-            f"On Linux and Windows, the DTW extension requires PyTorch with CUDA {cuda_version}. "
-            "It it not compatible with other CUDA versions, or with the CPU only version of PyTorch, "
-            "even if you wanted to only use the CPU backend of the DTW. "
-        )
-        raise ImportError(msg)
+    expected = json.loads((importlib.resources.files("fastabx") / "torch_version.json").read_text())[sys.platform]
+    if torch.__version__ != expected:
+        raise PyTorchVersionError(torch.__version__, expected)
     from . import _C  # type: ignore[attr-defined] # noqa: F401
 
 
