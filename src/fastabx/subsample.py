@@ -22,7 +22,7 @@ def subsample_across_group(df: pl.LazyFrame, size: int, seed: int) -> pl.LazyFra
     df = df.with_columns(pl.concat_str(~to_ignore, separator="-").alias("__group"))
     return (
         df.group_by("__group", maintain_order=True)
-        .agg((cs.ends_with("_x") & (~cs.starts_with("index"))).unique().shuffle(seed).head(size))
+        .agg((cs.ends_with("_x") & (~cs.starts_with("index"))).unique(maintain_order=True).shuffle(seed).head(size))
         .explode(x_cols)
         .join(df, on=["__group", *x_cols], how="left")
         .select(cs.exclude("__group"))
