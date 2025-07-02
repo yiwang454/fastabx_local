@@ -46,12 +46,12 @@ def test_zerospeech(
     score = zerospeech_abx(
         item,
         features,
+        max_size_group=pytestconfig.max_size_group,
+        max_x_across=pytestconfig.max_x_across,
         speaker=speaker,
         context=context,
         distance=pytestconfig.distance,
         frequency=pytestconfig.frequency,
-        max_size_group=pytestconfig.max_size_group,
-        max_x_across=pytestconfig.max_x_across,
         seed=pytestconfig.seed,
     )
     torch.testing.assert_close(score, reference, rtol=0, atol=1e-5)
