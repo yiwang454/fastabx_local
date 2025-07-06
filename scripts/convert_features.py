@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser_to_h5.add_argument("features", type=Path, help="The path to the features directory of torch tensors")
     parser_to_h5.add_argument("destination", type=Path, help="The output h5features file")
     parser_to_h5.add_argument("--times", type=Path, help="Path to the optional directory of times tensor")
-    parser_to_h5.add_argument("--step", type=float, help="Optional time step in seconds (default: 0.02)")
+    parser_to_h5.add_argument("--step", type=float, help="Time step in seconds (should be 0.02 for 50Hz models)")
     args = parser.parse_args()
 
     if args.subcommand == "torch":
@@ -81,6 +81,6 @@ if __name__ == "__main__":
         elif args.step is None and args.times is not None:
             torch_to_h5features_with_times(args.features, args.times, args.destination)
         else:
-            raise ValueError("Set exactly one of --times or --step")
+            parser.error("Set exactly one of --times or --step")
     else:
-        raise ValueError(f"Invalid subcommand: {args.subcommand}")
+        parser.error(f"Invalid subcommand: {args.subcommand}")

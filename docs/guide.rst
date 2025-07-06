@@ -2,7 +2,8 @@
 User guide
 ==========
 
-If you are coming from ABXpy or Libri-light / ZeroSpeech 2021 ABX, see :ref:`this page <other libs>`.
+| If you are coming from ABXpy or Libri-light / ZeroSpeech 2021 ABX, see :ref:`this page <other libs>`.
+| If you want to reproduce experiments from the paper, see: https://github.com/mxmpl/fastabx-paper.
 
 Python API
 ==========
