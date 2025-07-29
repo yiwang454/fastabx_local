@@ -94,6 +94,11 @@ def identical_distance(a1: Tensor, a2: Tensor) -> Tensor:
 def distance_on_cell(cell: Cell, distance: Distance) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the distance matrices between all A and X, and all B and X in the ``cell``, for a given ``distance``."""
     (a, sa), (b, sb), (x, sx) = (cell.a.data, cell.a.sizes), (cell.b.data, cell.b.sizes), (cell.x.data, cell.x.sizes)
+    if x.numel() == 0 or a.numel() == 0 or b.numel() == 0:
+        print("found abx input tensor size 0")
+        return torch.tensor(float('nan'), device=x.device, dtype=torch.float32), \
+            torch.tensor(float('nan'), device=x.device, dtype=torch.float32)
+
     if cell.use_dtw:
         dxa = dtw_batch(distance(x, a), sx, sa, symmetric=cell.is_symmetric)
         dxb = dtw_batch(distance(x, b), sx, sb, symmetric=False)
@@ -105,6 +110,11 @@ def distance_on_cell(cell: Cell, distance: Distance) -> tuple[torch.Tensor, torc
 def abx_on_cell(cell: Cell, distance: Distance) -> torch.Tensor:
     """Compute the ABX of a ``cell`` using the given ``distance``."""
     dxa, dxb = distance_on_cell(cell, distance)
+    if torch.isnan(dxa).any() or torch.isnan(dxb).any() or \
+       torch.isinf(dxa).any() or torch.isinf(dxb).any():
+        # If any of the distance matrices are NaN or Inf, the ABX score is undefined for this cell.
+        return torch.tensor(float('nan')) # Return a scalar NaN tensor
+
     if cell.is_symmetric:
         dxa.fill_diagonal_(dxb.max() + 1)
     nx, na = dxa.size()

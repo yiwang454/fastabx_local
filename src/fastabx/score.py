@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 from pathlib import Path
-
+import torch
 import polars as pl
 import polars.selectors as cs
 from tqdm import tqdm
@@ -46,7 +46,12 @@ def score_details(cells: pl.DataFrame, *, levels: Sequence[tuple[str, ...] | str
     verify_score_levels(cells.columns, levels_in_tuples)
     for level in levels_in_tuples:
         group_key = cs.exclude("score", "size", *level)
-        cells = cells.group_by(group_key, maintain_order=True).agg(pl.col("score").mean(), pl.col("size").sum())
+        # cells = cells.group_by(group_key, maintain_order=True).agg(pl.col("score").mean(), pl.col("size").sum())
+        cells = cells.group_by(group_key, maintain_order=True).agg(
+            # Filter out nulls *before* calculating the mean
+            pl.col("score").filter(pl.col("score").is_not_nan()).mean(), # <--- CRITICAL CHANGE
+            pl.col("size").sum()
+        )
     return cells
 
 
@@ -60,7 +65,13 @@ class Score:
         if distance_name in ("cosine", "angular"):
             task.dataset.normalize_()
         for cell in tqdm(task, "Scoring each cell", disable=len(task) < MIN_CELLS_FOR_TQDM):
-            scores.append(abx_on_cell(cell, distance).item())
+            cell_score_tensor = abx_on_cell(cell, distance) #.item()
+            if torch.isnan(cell_score_tensor).all() or not cell_score_tensor.ndim == 0:
+                print(f"WARNING: Skipping score for cell '{cell.description}' due to invalid result: 'Empty/Invalid Tensor'")
+                # continue # Skip this cell and don't append its score
+                scores.append(float('nan'))
+            else:
+                scores.append(cell_score_tensor.item())
             sizes.append(len(cell))
         self._cells = task.cells.select(cs.exclude("description", "header")).with_columns(
             score=pl.Series(scores, dtype=pl.Float32), size=pl.Series(sizes)

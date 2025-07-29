@@ -179,8 +179,11 @@ def load_data_from_item[T](
     for fileid, start_indices, end_indices in tqdm(by_file.iter_rows(), desc="Building dataset", total=len(by_file)):
         features = feature_maker(mapping[fileid]).detach().to(device)
         for start, end in zip(start_indices, end_indices, strict=True):
-            if start < 0 or end > features.size(0):
+            if start < 0:
                 raise FeaturesSizeError(fileid, start, end, features.size(0))
+            if end > features.size(0):
+                missing_frame = end - features.size(0)
+                features = torch.cat([features] + [features[-1:] for _ in range(missing_frame)], dim=0)
             data.append(features[start:end])
     return dict(enumerate(indices.rows())), torch.cat(data, dim=0)
 
