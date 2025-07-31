@@ -12,28 +12,27 @@ def maker(path: str) -> torch.Tensor:
     return torch.load(path, weights_only=True)
 
 def main():
-    item, frequency = "/mnt/ceph_rbd/muavic/scripts/vctk_largeclass_tenth.item", 50
+    item, frequency = "/mnt/ceph_rbd/muavic/scripts/vctk_largeclass_accent_tenth.item", 50
     features = f"/mnt/ceph_rbd/data/vctk/hubert_feature/large_l{layer}_mic1"
-    # dataset = Dataset.from_item(item, features, frequency) # feature_maker
+    dataset = Dataset.from_item(item, features, frequency) # feature_maker
 
-    abx = zerospeech_abx(
-        item,
-        features,
-        max_size_group=10,
-        max_x_across=5,
-        feature_maker=maker,
-        extension=".pt",
-    )
-    print(abx)
+    subsampler = Subsampler(max_size_group=10, max_x_across=2)
+    task = Task(dataset, on="#phone", by=["next-phone", "prev-phone", "accent"], across=["speaker"], subsampler=subsampler,)
+    print(len(task))
+    print(task[0])
+    score = Score(task, "angular")
+    abx_error_rate = score.collapse(levels=[("prev-phone", "next-phone", "accent"), "speaker"])
+    print(abx_error_rate)
 
-    # subsampler = Subsampler(max_size_group=10, max_x_across=5)
-    # task = Task(dataset, on="#phone", by=["next-phone", "prev-phone"], across=["speaker"], subsampler=subsampler,)
-    # print(len(task))
-    # print(task[0])
-    # score = Score(task, "angular")
-    # abx_error_rate = score.collapse(levels=[("prev-phone", "next-phone"), "speaker"])
-    # print(abx_error_rate)
-
+    # abx = zerospeech_abx(
+    #     item,
+    #     features,
+    #     max_size_group=10,
+    #     max_x_across=5,
+    #     feature_maker=maker,
+    #     extension=".pt",
+    # )
+    # print(abx)
 if __name__ == "__main__":
     main()
 
