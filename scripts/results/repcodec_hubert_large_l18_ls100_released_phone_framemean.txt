@@ -1,3 +1,0 @@
-2025-09-09 23:03:30 | INFO | distance.py | in distance func a.size() torch.Size([1, 1, 1025]), b.size() torch.Size([1, 1, 1025]), x.size() torch.Size([1, 1, 1025])
-2025-09-09 23:03:30 | INFO | distance.py | dxa.size() dxb.size() torch.Size([1, 1]) torch.Size([1, 1])
-phone_abx score 0.12871420455419205
