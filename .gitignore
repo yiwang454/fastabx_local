@@ -7,3 +7,6 @@ __pycache__
 *.code-workspace
 .envrc
 build
+
+# results
+scripts/results/*
