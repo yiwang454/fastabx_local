@@ -115,6 +115,7 @@ class InvalidCellError(ValueError):
 def verify_cell(a_sa: tuple[Tensor, Tensor], b_sb: tuple[Tensor, Tensor], x_sx: tuple[Tensor, Tensor]) -> None:
     """Assert the integrity of a cell."""
     (a, sa), (b, sb), (x, sx) = a_sa, b_sb, x_sx
+    # print("a.size(), b.size(), x.size()", a.size(), b.size(), x.size())
     if not a.ndim == b.ndim == x.ndim == NDIM:
         raise InvalidCellError(CellErrorType.NDIM)
     if not a.size(2) == b.size(2) == x.size(2):

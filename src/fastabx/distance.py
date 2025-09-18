@@ -13,6 +13,14 @@ from fastabx.dtw import dtw_batch
 type Distance = Callable[[Tensor, Tensor], Tensor]
 type DistanceName = Literal["euclidean", "cosine", "angular", "kl", "kl_symmetric", "identical", "null"]
 
+import logging, os, sys
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=os.environ.get("LOGLEVEL", "INFO").upper(),
+    stream=sys.stdout, 
+)
+logger = logging.getLogger("distance.py")
 
 def available_distances() -> tuple[str, ...]:
     """Names of the available distances."""
@@ -99,11 +107,33 @@ def distance_on_cell(cell: Cell, distance: Distance) -> tuple[torch.Tensor, torc
         return torch.tensor(float('nan'), device=x.device, dtype=torch.float32), \
             torch.tensor(float('nan'), device=x.device, dtype=torch.float32)
 
+    logger.info(f"cell.use_dtw {cell.use_dtw}")
+
     if cell.use_dtw:
         dxa = dtw_batch(distance(x, a), sx, sa, symmetric=cell.is_symmetric)
         dxb = dtw_batch(distance(x, b), sx, sb, symmetric=False)
     else:
         dxa, dxb = distance(x, a).squeeze(2, 3), distance(x, b).squeeze(2, 3)
+    return dxa, dxb
+
+def distance_on_cell_mean(cell: Cell, distance: Distance) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute the distance matrices between all A and X, and all B and X in the ``cell``, for a given ``distance``."""
+    (a, sa), (b, sb), (x, sx) = (cell.a.data, cell.a.sizes), (cell.b.data, cell.b.sizes), (cell.x.data, cell.x.sizes)
+    a, b, c = cell.a.data, cell.b.data, cell.x.data
+    [a, b, c] = list(map(lambda x: torch.mean(x, dim=1, keepdim=True) , [a, b, c]))
+    sa, sb, sx = a.sizes, b.sizes, x.sizes
+    logger.info(f"in distance func a.size() {sa}, b.size() {sb}, x.size() {sx}")
+    if x.numel() == 0 or a.numel() == 0 or b.numel() == 0:
+        print("found abx input tensor size 0")
+        return torch.tensor(float('nan'), device=x.device, dtype=torch.float32), \
+            torch.tensor(float('nan'), device=x.device, dtype=torch.float32)
+
+    # # disable dtw cause the middle dim = 1
+    # if cell.use_dtw:
+    #     dxa = dtw_batch(distance(x, a), sx, sa, symmetric=cell.is_symmetric)
+    #     dxb = dtw_batch(distance(x, b), sx, sb, symmetric=False)
+    # else:
+    dxa, dxb = distance(x, a).squeeze(2, 3), distance(x, b).squeeze(2, 3)
     return dxa, dxb
 
 
@@ -117,6 +147,28 @@ def abx_on_cell(cell: Cell, distance: Distance) -> torch.Tensor:
 
     if cell.is_symmetric:
         dxa.fill_diagonal_(dxb.max() + 1)
+    nx, na = dxa.size()
+    nx, nb = dxb.size()
+    dxb = dxb.view(nx, 1, nb).expand(nx, na, nb)
+    dxa = dxa.view(nx, na, 1).expand(nx, na, nb)
+    sc = (dxa < dxb).sum() + 0.5 * (dxa == dxb).sum()
+    sc /= len(cell)
+    return 1 - sc
+
+def abx_on_cell_mean(cell: Cell, distance: Distance) -> torch.Tensor:
+    """Compute the ABX of a ``cell`` using the given ``distance``."""
+    dxa, dxb = distance_on_cell_mean(cell, distance)
+    logger.info(f"dxa, dxb sizes {} {}")
+    if torch.isnan(dxa).any() or torch.isnan(dxb).any() or \
+       torch.isinf(dxa).any() or torch.isinf(dxb).any():
+        # If any of the distance matrices are NaN or Inf, the ABX score is undefined for this cell.
+        return torch.tensor(float('nan')) # Return a scalar NaN tensor
+
+    if cell.is_symmetric:
+        dxa.fill_diagonal_(dxb.max() + 1)
+
+    logger.info(f"dxa.size() dxb.size() {dxa.size()} {dxb.size()}")
+    sys.exit()
     nx, na = dxa.size()
     nx, nb = dxb.size()
     dxb = dxb.view(nx, 1, nb).expand(nx, na, nb)

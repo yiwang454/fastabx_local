@@ -124,6 +124,8 @@ def read_item(item: str | Path) -> pl.DataFrame:
         "prev-phone": pl.String,
         "next-phone": pl.String,
         "speaker": pl.String,
+        "accent": pl.String,
+        "gender": pl.String,
     }
     try:
         return pl.read_csv(item, separator=" ", schema=schema).with_columns(

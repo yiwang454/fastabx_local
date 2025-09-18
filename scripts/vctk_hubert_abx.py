@@ -3,8 +3,8 @@ import torch
 from fastabx import Dataset, Subsampler, Task
 from fastabx import Score
 from fastabx import zerospeech_abx
+import sys
 
-layer = 18
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 sample_percent = 0.1
 
@@ -12,8 +12,12 @@ def maker(path: str) -> torch.Tensor:
     return torch.load(path, weights_only=True)
 
 def main():
-    item, frequency = "/mnt/ceph_rbd/muavic/scripts/vctk_largeclass_tenth.item", 50
-    features = f"/mnt/ceph_rbd/data/vctk/hubert_feature/large_l{layer}_mic1"
+    item = sys.argv[1] # /home/s2522559/datastore/items_vctk/vctk_largeclass_debug_fourth1.item
+    features_root = sys.argv[2] # /home/s2522559/datastore
+    layer = sys.argv[3]
+    frequency = 50
+    features = f"{features_root}/vctk/hubert_feature/large_l{layer}_mic1"
+    # f"/mnt/ceph_rbd/data/vctk/hubert_feature/large_l{layer}_mic1"
     # dataset = Dataset.from_item(item, features, frequency) # feature_maker
 
     abx = zerospeech_abx(
@@ -46,20 +50,4 @@ def maker(path: str) -> torch.Tensor:
     # features, _ = model.extract_features(x.to(device))
     return features 
 
-def zerospeech_abx_trial():
-    abx = zerospeech_abx(
-        "/mnt/ceph_rbd/muavic/scripts/vctk_temp_item.item",
-        f"/mnt/ceph_rbd/data/vctk/hubert_feature/large_l{layer}_mic1",
-        max_size_group=10,
-        max_x_across=None,
-        feature_maker=maker,
-        extension=".pt",
-    )
-    print(abx)
-    """
-    0.0 # something wrong, maybe because there's only one speaker above
-    """
 
-
-# def post_delete_item():
-#     [170498, 264684, 397790, 505072]

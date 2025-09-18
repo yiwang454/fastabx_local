@@ -7,12 +7,20 @@ import polars as pl
 import polars.selectors as cs
 from tqdm import tqdm
 
-from fastabx.distance import DistanceName, abx_on_cell, distance_function
+from fastabx.distance import DistanceName, abx_on_cell, abx_on_cell_mean, distance_function
 from fastabx.task import Task
 from fastabx.verify import format_score_levels, verify_score_levels
 
 MIN_CELLS_FOR_TQDM = 50
 
+import logging, os, sys
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=os.environ.get("LOGLEVEL", "INFO").upper(),
+    stream=sys.stdout, 
+)
+logger = logging.getLogger("score.py")
 
 def pl_weighted_mean(value_col: str, weight_col: str) -> pl.Expr:
     """Generate a Polars aggregation expression to take a weighted mean.
@@ -58,14 +66,19 @@ def score_details(cells: pl.DataFrame, *, levels: Sequence[tuple[str, ...] | str
 class Score:
     """Compute the score of a :py:class:`.Task` using a given distance specified by ``distance_name``."""
 
-    def __init__(self, task: Task, distance_name: DistanceName) -> None:
+    def __init__(self, task: Task, distance_name: DistanceName, frame_mean: bool = False) -> None:
         scores, sizes = [], []
         self.distance_name = distance_name
+        self.frame_mean = frame_mean
         distance = distance_function(distance_name)
         if distance_name in ("cosine", "angular"):
             task.dataset.normalize_()
         for cell in tqdm(task, "Scoring each cell", disable=len(task) < MIN_CELLS_FOR_TQDM):
-            cell_score_tensor = abx_on_cell(cell, distance) #.item()
+            # logger(f"about to call abx_on_cell")
+            if not frame_mean:
+                cell_score_tensor = abx_on_cell(cell, distance) #.item()
+            else:
+                cell_score_tensor = abx_on_cell_mean(cell, distance)
             if torch.isnan(cell_score_tensor).all() or not cell_score_tensor.ndim == 0:
                 print(f"WARNING: Skipping score for cell '{cell.description}' due to invalid result: 'Empty/Invalid Tensor'")
                 # continue # Skip this cell and don't append its score
