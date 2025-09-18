@@ -27,16 +27,39 @@ def main(output_path, rank=0):
     else:
         item = f"/mnt/ceph_rbd/muavic/scripts/items_vctk/vctk_largeclass_debug_fourth{rank}.item"
 
-    features = f"/mnt/ceph_rbd/data/vctk/hubert_feature/large_l{layer}_mic1"
+    features = f"/mnt/ceph_rbd/data/vctk/features/semantic_codecs_vctk"
     codebook_path = f"/mnt/ceph_rbd/data/vctk/features/semantic_codebook.pt"
     codec_codebook = torch.load(codebook_path, weights_only=True) # , map_location=torch.device('cpu')
-    dataset = Dataset.from_item(item, features, frequency, feature_maker=maker) # feature_maker
+    try:
+        dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker_codec_external(x, codec_codebook)) # feature_maker
+    except:
+        with open(output_path, "a+") as output_w:
+            output_w.write("stopped after dataset construction \n")
+        sys.exit()
 
     subsampler = Subsampler(max_size_group=10, max_x_across=2)
     # task = Task(dataset, on="#phone", across=["speaker"], subsampler=subsampler,) # by=["next-phone", "prev-phone", "accent"], 
-    task = Task(dataset, on="#phone", by=["next-phone", "prev-phone"], across=["speaker"], subsampler=subsampler,) #  "accent"
-    score = Score(task, "angular")
-    abx_error_rate = score.collapse(levels=[(), "speaker"]) # "prev-phone", "next-phone", "accent"
+    try:
+        task = Task(dataset, on="#phone", by=["next-phone", "prev-phone"], across=["speaker"], subsampler=subsampler,) #  "accent"
+    except:
+        with open(output_path, "a+") as output_w:
+            output_w.write("stopped after task construction \n")
+        sys.exit()
+
+    try:
+        score = Score(task, "angular")
+    except:
+        with open(output_path, "a+") as output_w:
+            output_w.write("stopped after score (separated) \n")
+        sys.exit()
+    
+    try:
+        abx_error_rate = score.collapse(levels=[("next-phone", "prev-phone"), "speaker"]) # "prev-phone", "next-phone", "accent"
+    except:
+        with open(output_path, "a+") as output_w:
+            output_w.write("stopped after score.collapse \n")
+        sys.exit()
+
     with open(output_path, "a+") as output_w:
         output_w.write("rank {}, abx_error_rate {} \n".format(rank, abx_error_rate))
 
@@ -54,7 +77,7 @@ if __name__ == "__main__":
     # for r in range(1, 3):
     #     main(r)
     o_path = sys.argv[1]
-    for r in range(1, 5):
+    for r in range(1, 3):
         main(o_path, rank=r)
 
 
