@@ -4,9 +4,13 @@ from multiprocessing import Pool
 
 global speaker_info_df_global
 
-def worker_init(df):
+def worker_init(df, word_list, s2a_dict):
     global speaker_info_df_global
+    global target_word_list_global
+    global speaker_to_accent_dict_global
     speaker_info_df_global = df
+    target_word_list_global = word_list
+    speaker_to_accent_dict_global = s2a_dict
 
 def read_speaker_info(path = "/mnt/ceph_rbd/data/vctk/speaker-info.txt"):
     with open(path, 'r') as outfile:
@@ -121,38 +125,35 @@ def csv_single_process_words(scratch_path, speaker_dir, filename):
 
     # Filter for 'phones'
     phone_df = df[df['Type'] == 'words'].copy()
+    global speaker_info_df_global
+    global target_word_list_global
+    global speaker_to_accent_dict_global
+
+    phone_df = phone_df[phone_df['Label'] in target_word_list_global]
 
     if phone_df.empty:
-        # print(f"Warning: No phone entries found in {csv_path}. Skipping.")
+        # print(f"Warning: No target word entries found in {csv_path}. Skipping.")
         return None
 
-    # Ensure the DataFrame is sorted by 'Begin' to get correct sequence
     phone_df = phone_df.sort_values(by='Begin').reset_index(drop=True)
-
     speaker = phone_df['Speaker'].iloc[0]
     assert speaker == name_speaker
 
-    global speaker_info_df_global
     # # Iterate through phone entries to determine prev/next phones
     # phone_labels = phone_df['words'].tolist()
     speaker_row = speaker_info_df_global.loc[speaker_info_df_global['ID'] == speaker]
-    accent_labels, gender_labels = speaker_row.ACCENTS.values[0], speaker_row.GENDER.values[0]
+    accent_labels, gender_labels = speaker_to_accent_dict_global[speaker], speaker_row.GENDER.values[0]
 
     for i, row in phone_df.iterrows():
         onset = row['Begin']
         offset = row['End']
-        current_phone = real_phoneme(row['Label'])
+        current_word = row['Label']
         if offset - onset <= 0.02:
             print(f"too short phone idx {i} duration {offset - onset}")
             continue
-
-        prev_phone = phone_labels[i-1] if i > 0 else 'spn' # Use 'SIL' or '<UNK>' for start
-        next_phone = phone_labels[i+1] if i < len(phone_labels) - 1 else 'spn' # Use 'SIL' or '<UNK>' for end
-        prev_phone, next_phone = real_phoneme(prev_phone), real_phoneme(next_phone)
-
         # Format and write to the output file
         outfile_list.append(
-            f"{file_id} {onset:.4f} {offset:.4f} {current_phone} {prev_phone} {next_phone} {speaker} {accent_labels} {gender_labels}\n"
+            f"{file_id} {onset:.4f} {offset:.4f} {current_word} {speaker} {accent_labels} {gender_labels}\n"
         ) #  
     return outfile_list
 
@@ -160,6 +161,7 @@ def convert_alignment_csv_to_item_file(
     scratch_path: str,
     output_item_file: str,
     speaker_info_df,
+    speaker_to_accent_dict,
     n_workers: int = 4,
 ):
     """
@@ -173,6 +175,8 @@ def convert_alignment_csv_to_item_file(
     for speaker_dir in os.listdir(scratch_path):
         if not os.path.isdir(os.path.join(scratch_path, speaker_dir)):
             continue
+        if speaker_dir not in speaker_to_accent_dict:
+            continue
         
         for filename in os.listdir(os.path.join(scratch_path, speaker_dir)):
             if filename.endswith(".csv"):
@@ -182,13 +186,13 @@ def convert_alignment_csv_to_item_file(
     with Pool(
         processes=n_workers,
         initializer=worker_init,
-        initargs=(speaker_info_df,) # Pass the DataFrame here
+        initargs=(speaker_info_df, target_word_list, speaker_to_accent_dict) # Pass the DataFrame here
     ) as p:
-        results = p.starmap(csv_single_process, inputs_list)
+        results = p.starmap(csv_single_process_words, inputs_list)
 
     with open(output_item_file, 'w+') as outfile:
         # Write the header to the item file
-        outfile.write("#file onset offset #phone prev-phone next-phone speaker accent gender\n")
+        outfile.write("#file onset offset #phone speaker accent gender\n")
         for result in results:
             if (result is None) and (len(result) > 0):
                 continue
@@ -202,7 +206,17 @@ if __name__ == "__main__":
     alignment_base_folder = sys.argv[1] 
     output_file_name = sys.argv[2]
     n_workers = int(sys.argv[3])
+    speaker_info_path = sys.argv[4]
+    top_words_path = sys.argv[5]
+    spk2accent_path = sys.argv[6]
+    tsv_df = pd.read_csv(top_words_path, sep='\t', header=None)
+    target_word_list = tsv_df.iloc[:, 1].tolist()
+
+    with open(spk2accent_path, "r") as spk2accent_r:
+    accent_to_speaker = json.load(spk2accent_r)
+
+    speaker_to_accent_dict = {speaker: accent for accent, speakers in accent_to_speaker.items() for speaker in speakers}
 
     # Run the conversion
-    speaker_df = read_speaker_info()
-    convert_alignment_csv_to_item_file(alignment_base_folder, output_file_name, speaker_df, n_workers=n_workers)
+    speaker_df = read_speaker_info(speaker_info_path)
+    convert_alignment_csv_to_item_file(alignment_base_folder, output_file_name, speaker_df, speaker_to_accent_dict, n_workers=n_workers)
