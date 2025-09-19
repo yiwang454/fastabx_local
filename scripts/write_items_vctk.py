@@ -1,5 +1,5 @@
 import pandas as pd
-import os, sys, re
+import os, sys, re, json
 from multiprocessing import Pool
 
 global speaker_info_df_global
@@ -129,7 +129,7 @@ def csv_single_process_words(scratch_path, speaker_dir, filename):
     global target_word_list_global
     global speaker_to_accent_dict_global
 
-    phone_df = phone_df[phone_df['Label'] in target_word_list_global]
+    phone_df = phone_df[phone_df['Label'].isin(target_word_list_global)]
 
     if phone_df.empty:
         # print(f"Warning: No target word entries found in {csv_path}. Skipping.")
@@ -194,7 +194,7 @@ def convert_alignment_csv_to_item_file(
         # Write the header to the item file
         outfile.write("#file onset offset #phone speaker accent gender\n")
         for result in results:
-            if (result is None) and (len(result) > 0):
+            if (result is None) or (len(result) == 0):
                 continue
             for res in result:
                 outfile.write(res)
@@ -213,10 +213,19 @@ if __name__ == "__main__":
     target_word_list = tsv_df.iloc[:, 1].tolist()
 
     with open(spk2accent_path, "r") as spk2accent_r:
-    accent_to_speaker = json.load(spk2accent_r)
+        accent_to_speaker = json.load(spk2accent_r)
 
     speaker_to_accent_dict = {speaker: accent for accent, speakers in accent_to_speaker.items() for speaker in speakers}
 
     # Run the conversion
     speaker_df = read_speaker_info(speaker_info_path)
     convert_alignment_csv_to_item_file(alignment_base_folder, output_file_name, speaker_df, speaker_to_accent_dict, n_workers=n_workers)
+
+    ############ debug ##############
+    # global speaker_info_df_global, target_word_list_global, speaker_to_accent_dict_global
+    # speaker_info_df_global = speaker_df
+    # target_word_list_global = target_word_list
+    # speaker_to_accent_dict_global = speaker_to_accent_dict
+    # outfile_list = csv_single_process_words("/mnt/ceph_rbd/data/vctk/dummy", "p276", "p276_001.csv")
+    # df = pd.DataFrame(outfile_list)
+    # print(df)

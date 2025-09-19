@@ -72,6 +72,13 @@ if __name__ == "__main__":
         abx_error_rate = score.collapse(levels=[("next-phone", "#phone", "prev-phone"),])
         print("accent_abx score", abx_error_rate)
 
+    elif args.abx_mode == "accent_word":
+        dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook)) # feature_maker
+        task = Task(dataset, on="accent", by=["#phone"]) # across=["speaker"]
+        score = Score(task, "angular", frame_mean=args.frame_mean)
+        abx_error_rate = score.collapse(levels=[("#phone"),])
+        print("accent_word score", abx_error_rate)
+
     else:
         raise NotImplemented
 
