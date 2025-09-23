@@ -88,7 +88,7 @@ if __name__ == "__main__":
             print("warning: wrong dataset implementation with schema")
         task = Task(dataset, on="accent", by=["#phone"]) # across=["speaker"]
         print(len(task))
-        print(task[:10])
+        print([task[i] for i in range(10)])
         score = Score(task, "angular", frame_mean=args.frame_mean)
         abx_error_rate = score.collapse(levels=[("#phone"),])
         print("accent_word score", abx_error_rate)
