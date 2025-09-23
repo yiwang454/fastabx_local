@@ -5,6 +5,14 @@ from fastabx import Score
 from fastabx import zerospeech_abx
 import sys, os
 import argparse
+from pathlib import Path
+fastabx_root = str(Path(__file__).resolve().parent.parent)
+mod_flag = False
+if fastabx_root.split("/")[-1] == "fastabx":
+    sys.path.append(fastabx_root)
+    from utils.dataset_mod import DatasetMod
+    mod_flag = True
+
 
 def parse_args():
     """
@@ -73,8 +81,14 @@ if __name__ == "__main__":
         print("accent_abx score", abx_error_rate)
 
     elif args.abx_mode == "accent_word":
-        dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook)) # feature_maker
+        if mod_flag:
+            dataset = DatasetMod.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook)) # feature_maker
+        else:
+            dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook))
+            print("warning: wrong dataset implementation with schema")
         task = Task(dataset, on="accent", by=["#phone"]) # across=["speaker"]
+        print(len(task))
+        # print(task[0])
         score = Score(task, "angular", frame_mean=args.frame_mean)
         abx_error_rate = score.collapse(levels=[("#phone"),])
         print("accent_word score", abx_error_rate)

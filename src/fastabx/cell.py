@@ -9,7 +9,7 @@ import polars.selectors as cs
 from fastabx.dataset import Batch
 from fastabx.verify import verify_cell
 
-MIN_A_LEN = 2  # Minimum length of A in the ABX task.
+MIN_A_LEN = 1  # Minimum length of A in the ABX task.
 
 
 @dataclass(frozen=True)

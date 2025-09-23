@@ -61,11 +61,15 @@ def score_details(cells: pl.DataFrame, *, levels: Sequence[tuple[str, ...] | str
 def score_task(task: Task, distance: Distance, frame_mean=False) -> tuple[list[float], list[int]]:
     """Score each cell of a :py:class:`.Task` using a given distance, and return scores and sizes."""
     scores, sizes = [], []
+    FLAG = True
     for cell in tqdm(task, "Scoring each cell", disable=len(task) < MIN_CELLS_FOR_TQDM):
         if not frame_mean:
-            scores.append(abx_on_cell(cell, distance).item())
+            scores.append(abx_on_cell(cell, distance, verbose=FLAG).item())
+            if FLAG:
+                logger.info(f"cell {cell.use_dtw}")
         else:
             scores.append(abx_on_cell_mean(cell, distance).item())
+        FLAG = False
 
         sizes.append(len(cell))
     return scores, sizes
@@ -92,8 +96,6 @@ class Score:
             if constraints is None
             else score_task_with_constraints(task, distance, constraints)
         )
-    
-        abx_on_cell_mean
         self._cells = task.cells.select(cs.exclude("description", "header")).with_columns(
             score=pl.Series(scores, dtype=pl.Float32), size=pl.Series(sizes)
         )
