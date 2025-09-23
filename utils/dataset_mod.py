@@ -1,16 +1,16 @@
 from fastabx import Dataset, Subsampler, Task
-
+from fastabx.dataset import find_all_files, load_data_from_item
 import polars as pl
 import torch
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Callable, Self, Any
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
 def read_item_mod(item: str | Path, schema_overrides = None) -> pl.DataFrame:
     """Read an item file."""
 
+    print("schema_overrides", schema_overrides)
     try:
-        print("schema_overrides", schema_overrides)
         df = pl.read_csv(item, separator=" ", schema_overrides=schema_overrides)
     except pl.exceptions.ComputeError as error:
         raise InvalidItemFileError from error
