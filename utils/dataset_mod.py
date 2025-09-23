@@ -6,22 +6,23 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Callable, Self, Any
 
-def read_item_mod(item: str | Path) -> pl.DataFrame:
+def read_item_mod(item: str | Path, schema_overrides = None) -> pl.DataFrame:
     """Read an item file."""
 
     try:
-        df = pl.read_csv(item, separator=" ")
-        print("[read_item_mod]DataFrame Header:", df.columns)
-        return df.with_columns(df["onset"].str.to_decimal(), df["offset"].str.to_decimal())
+        print("schema_overrides", schema_overrides)
+        df = pl.read_csv(item, separator=" ", schema_overrides=schema_overrides)
     except pl.exceptions.ComputeError as error:
         raise InvalidItemFileError from error
+    print("[read_item_mod]DataFrame Header:", df.columns)
+    return df.with_columns(df["onset"].str.to_decimal(), df["offset"].str.to_decimal())
 
 def read_labels_mod(item: str | Path, file_col: str, onset_col: str, offset_col: str) -> pl.DataFrame:
     """Return the labels from the path to the item file."""
     schema_overrides = {file_col: pl.String, onset_col: pl.String, offset_col: pl.String}
     match ext := Path(item).suffix:
         case ".item":
-            return read_item_mod(item)
+            return read_item_mod(item, schema_overrides=schema_overrides)
         case ".csv":
             df = pl.read_csv(item, schema_overrides=schema_overrides)
             return df.with_columns(df[onset_col].str.to_decimal(), df[offset_col].str.to_decimal())
