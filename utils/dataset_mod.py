@@ -1,5 +1,5 @@
 from fastabx import Dataset, Subsampler, Task
-from fastabx.dataset import find_all_files, load_data_from_item
+from fastabx.dataset import find_all_files, load_data_from_item, InMemoryAccessor
 import polars as pl
 import torch
 from pathlib import Path
