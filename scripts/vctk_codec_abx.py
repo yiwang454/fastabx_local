@@ -82,13 +82,13 @@ if __name__ == "__main__":
 
     elif args.abx_mode == "accent_word":
         if mod_flag:
-            dataset = DatasetMod.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook)) # feature_maker
+            dataset = DatasetMod.from_item_limitlen(item, features, frequency, feature_maker=lambda x: maker(x, codebook), len_lim=15) # feature_maker
         else:
             dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook))
             print("warning: wrong dataset implementation with schema")
         task = Task(dataset, on="accent", by=["#phone"]) # across=["speaker"]
         print(len(task))
-        # print(task[0])
+        print(task[:10])
         score = Score(task, "angular", frame_mean=args.frame_mean)
         abx_error_rate = score.collapse(levels=[("#phone"),])
         print("accent_word score", abx_error_rate)
