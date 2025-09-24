@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     elif args.abx_mode == "accent_word":
         if mod_flag:
-            dataset = DatasetMod.from_item_limitlen(item, features, frequency, feature_maker=lambda x: maker(x, codebook), len_lim=100) # feature_maker
+            dataset = DatasetMod.from_item_limitlen(item, features, frequency, feature_maker=lambda x: maker(x, codebook), len_lim=30) # feature_maker
         else:
             dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook))
             print("warning: wrong dataset implementation with schema")
