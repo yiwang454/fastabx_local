@@ -94,8 +94,8 @@ if __name__ == "__main__":
         print(type(score))
         abx_errors_withlevel, abx_errors_nolevel = score.collapse_nomean(levels=[("#phone"),])
         # print("accent_word score", abx_error_rate)
-        abx_errors_withlevel.write_csv(os.path.join(output_dir, "abx_errors_withlevel.csv"))
-        abx_errors_nolevel.write_csv(os.path.join(output_dir, "abx_errors_nolevel.csv"))
+        abx_errors_withlevel.write_csv(os.path.join(args.output_dir, "abx_errors_withlevel.csv"))
+        abx_errors_nolevel.write_csv(os.path.join(args.output_dir, "abx_errors_nolevel.csv"))
 
     else:
         raise NotImplemented
