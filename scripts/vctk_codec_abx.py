@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('codebook_path',type=str)
     parser.add_argument('--abx_mode',type=str, default="phone_abx")
     parser.add_argument('--frame_mean', action='store_true')
+    parser.add_argument('--output_dir', type=str)
 
     args = parser.parse_args()
     return args
@@ -91,8 +92,10 @@ if __name__ == "__main__":
         print([task[i] for i in range(len(task) - 10, len(task))])
         score = Score(task, "angular", frame_mean=args.frame_mean)
         print(type(score))
-        abx_error_rate = score.collapse(levels=[("#phone"),])
-        print("accent_word score", abx_error_rate)
+        abx_errors_withlevel, abx_errors_nolevel = score.collapse_nomean(levels=[("#phone"),])
+        # print("accent_word score", abx_error_rate)
+        abx_errors_withlevel.write_csv(os.path.join(output_dir, "abx_errors_withlevel.csv"))
+        abx_errors_nolevel.write_csv(os.path.join(output_dir, "abx_errors_nolevel.csv"))
 
     else:
         raise NotImplemented
