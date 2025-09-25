@@ -139,7 +139,7 @@ def selected_scores(file_path, select_mode, select_param):
     df_selected.reset_index(drop=True, inplace=True)
     mean_abx_score = df_selected['score'].mean()
 
-    print(mean_abx_score) # "selected_score,", select_param, select_mode,  file_path
+    print(file_path, mean_abx_score) # "selected_score,", select_param, select_mode,  file_path
     # df_selected.to_csv(os.path.join(output_dir, "reordered_collapsed_scores_top5.csv"), index=False)
 
 if __name__ == "__main__":
