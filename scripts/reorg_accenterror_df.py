@@ -2,6 +2,7 @@ import polars as pl
 import io, os
 import sys
 import pandas as pd
+import argparse
 
 def using_polar():
     item_path = sys.argv[1]
