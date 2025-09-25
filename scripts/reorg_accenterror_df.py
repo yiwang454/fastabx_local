@@ -1,6 +1,7 @@
 import polars as pl
 import io, os
 import sys
+import pandas as pd
 
 def using_polar():
     item_path = sys.argv[1]
@@ -36,10 +37,10 @@ def using_polar():
     new_column_order = ["accent", "#phone", "mean_score"] + accent_b_cols
     final_df_reordered = final_df.select(new_column_order)
 
+    print("reorg result, ", os.path.join(output_dir, "reordered_collapsed_scores.csv"))
     final_df_reordered.write_csv(os.path.join(output_dir, "reordered_collapsed_scores.csv"))
 
 def using_pandas_old():
-    import pandas as pd
     item_path = sys.argv[1]
     output_dir = sys.argv[2]
     # schema_customize = {
@@ -76,25 +77,18 @@ def using_pandas_old():
     final_df_reordered.to_csv(os.path.join(output_dir, "reordered_collapsed_scores.csv"))
 
 def using_pandas():
-    import pandas as pd
     file_path = sys.argv[1]
     output_dir = sys.argv[2]
     # 1. Load the data frame from a CSV file
     df = pd.read_csv(file_path)
-    print("Original DataFrame:")
-    print(df.head())
-    print("-" * 30)
 
     # 2. Filter out all rows with size less than 20
     # We use .copy() to avoid a SettingWithCopyWarning later.
     df_filtered = df[df['size'] >= 20].copy()
-
     # 3. Eliminate the size column
     df_filtered.drop('size', axis=1, inplace=True)
     
-    print("DataFrame after filtering and dropping 'size' column:")
-    print(df_filtered.head())
-    print("-" * 30)
+    print("DataFrame after filtering and dropping 'size' column:", df_filtered.head())
 
     # 4. Make all possible values in 'accent_b' as column names
     # Using groupby().unstack() for a more robust pivot operation.
@@ -103,10 +97,6 @@ def using_pandas():
 
     # Clean up the column names after pivot if needed
     df_pivoted.columns.name = None
-    
-    print("Pivoted DataFrame:")
-    print(df_pivoted)
-    print("-" * 30)
 
     # 5. Calculate the mean score among all 'accent_b' for each row
     # Identify the new accent columns to calculate the mean
@@ -125,7 +115,44 @@ def using_pandas():
     new_column_order = ['accent', '#phone', 'mean_score'] + accent_b_cols
     df_sorted = df_sorted[new_column_order]
 
+    print("reorg result, ", os.path.join(output_dir, "reordered_collapsed_scores_top5.csv"))
     df_sorted.to_csv(os.path.join(output_dir, "reordered_collapsed_scores_top5.csv"), index=False)
 
+def selected_scores(file_path, select_mode, select_param):
+    # to defind select_mode by choices={"threshold", "ratio", "number"} 
+    df = pd.read_csv(file_path)
 
-using_pandas()
+    df_filtered = df[df['size'] >= 20].copy()
+    df_filtered.drop('size', axis=1, inplace=True)
+    
+    df_sorted = df_filtered.sort_values(by=['score'], ascending=[True])
+    if select_mode == "number":
+        select_param = int(select_param)
+        df_selected = df_sorted[:select_param]
+    elif select_mode == "ratio":
+        number = int(len(df_sorted) * float(select_param))
+        df_selected = df_sorted[:number]
+    elif select_mode == "threshold":
+        df_selected = df_sorted[df_sorted["score"] <= select_param]
+
+    df_selected.reset_index(drop=True, inplace=True)
+    mean_abx_score = df_selected['score'].mean()
+
+    print("abx selected mean score,", file_path, select_param, select_mode, mean_abx_score)
+    # df_selected.to_csv(os.path.join(output_dir, "reordered_collapsed_scores_top5.csv"), index=False)
+
+if __name__ == "__main__":
+
+    def parse_args():
+        """
+        Parses command-line arguments for the file reorganization script.
+        """
+        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+        parser.add_argument('file_path',type=str)
+        parser.add_argument('select_mode',type=str, choices={"threshold", "ratio", "number"}, default="number")
+        parser.add_argument('select_param',type=float)
+        args = parser.parse_args()
+        return args
+    args = parse_args()
+    selected_scores(args.file_path, args.select_mode, args.select_param)
