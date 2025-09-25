@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument('item_file',type=str)
     parser.add_argument('layer',type=int)
     parser.add_argument('features_path',type=str)
-    parser.add_argument('codebook_path',type=str)
+    parser.add_argument('--codebook_path',type=str, default='')
     parser.add_argument('--abx_mode',type=str, default="phone_abx")
     parser.add_argument('--frame_mean', action='store_true')
     parser.add_argument('--output_dir', type=str)
@@ -36,8 +36,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 sample_percent = 0.1
 
 def maker(path: str, codebook: torch.Tensor) -> torch.Tensor:
-    data = torch.load(path, weights_only=True)
-    return codebook[data]
+    if codebook is not None:
+        data = torch.load(path, weights_only=True)
+        return codebook[data]
+    else:
+        data = torch.load(path, weights_only=True)
+        return data
 
 if __name__ == "__main__":
     args = parse_args()
@@ -48,8 +52,11 @@ if __name__ == "__main__":
     features = os.path.join(features_root, args.features_path) 
     # /home/s2522559/datastore/RepCodec_codecs/repcodec_hubert_large_l18_ls100/VCTK_tokens_reorg 
     # print("features path", features, "frame_mean", args.frame_mean)
-    codebook = torch.load(os.path.join(args.features_root, args.codebook_path), weights_only=True) # RepCodec_codecs/repcodec_hubert_large_l18_ls100/repcodec_hubert_large_l18_ls100_codebook.pt"
-
+    if len(args.codebook_path) > 0:
+        codebook = torch.load(os.path.join(args.features_root, args.codebook_path), weights_only=True) # RepCodec_codecs/repcodec_hubert_large_l18_ls100/repcodec_hubert_large_l18_ls100_codebook.pt"
+    else:
+        codebook = None
+    
     if args.abx_mode == "phone_abx":
         dataset = Dataset.from_item(item, features, frequency, feature_maker=lambda x: maker(x, codebook)) # feature_maker
         subsampler = Subsampler(max_size_group=10, max_x_across=5)
@@ -92,22 +99,18 @@ if __name__ == "__main__":
         print([task[i] for i in range(len(task) - 10, len(task))])
         score = Score(task, "angular", frame_mean=args.frame_mean)
         print(type(score))
-        # abx_errors_withlevel, abx_errors_nolevel = score.collapse_nomean(levels=[("#phone"),])
+        abx_errors_withlevel, abx_errors_nolevel = score.collapse_nomean(levels=[("accent_b"),])
         # # print("accent_word score", abx_error_rate)
-        # abx_errors_withlevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_withlevel.csv"))
-        # abx_errors_nolevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_nolevel.csv"))
+        abx_errors_withlevel.sort(["score"]).write_csv(os.path.join(args.output_dir, "abx_errors_withlevel.csv"))
+        abx_errors_nolevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_nolevel.csv"))
 
-        abx_errors_accentlevel, _ = score.collapse_nomean(levels=[("accent_b"),])
-        abx_errors_accentlevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_accentlevel_b.csv"))
+        # abx_errors_accentlevel, _ = score.collapse_nomean(levels=[("accent_b"),])
+        # abx_errors_accentlevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_accentlevel_b.csv"))
 
     else:
         raise NotImplemented
 
 
-def maker(path: str) -> torch.Tensor:
-    features = torch.load(path, weights_only=True)
-    # assert sr == bundle.sample_rate
-    # features, _ = model.extract_features(x.to(device))
-    return features 
+
 
 
