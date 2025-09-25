@@ -98,11 +98,11 @@ if __name__ == "__main__":
         print(len(task))
         print([task[i] for i in range(len(task) - 10, len(task))])
         score = Score(task, "angular", frame_mean=args.frame_mean)
-        print(type(score))
+        
         abx_errors_withlevel, abx_errors_nolevel = score.collapse_nomean(levels=[("accent_b"),])
         # # print("accent_word score", abx_error_rate)
-        abx_errors_withlevel.sort(["score"]).write_csv(os.path.join(args.output_dir, "abx_errors_withlevel.csv"))
-        abx_errors_nolevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_nolevel.csv"))
+        abx_errors_withlevel.sort(["score"]).write_csv(os.path.join(features_root, args.features_path + "_abx_errors_withlevel.csv"))
+        abx_errors_nolevel.sort(["score"]).write_csv(os.path.join(features_root, args.features_path + "_abx_errors_nolevel.csv"))
 
         # abx_errors_accentlevel, _ = score.collapse_nomean(levels=[("accent_b"),])
         # abx_errors_accentlevel.sort("score").write_csv(os.path.join(args.output_dir, "abx_errors_accentlevel_b.csv"))
