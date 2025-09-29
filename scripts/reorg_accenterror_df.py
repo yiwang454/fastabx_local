@@ -135,25 +135,67 @@ def selected_scores(file_path, select_mode, select_param):
         df_selected = df_sorted[:number]
     elif select_mode == "threshold":
         df_selected = df_sorted[df_sorted["score"] <= select_param]
+    elif select_mode == "combination":
+        assert type(select_param) is pd.core.frame.DataFrame
+        df_selected = pd.merge(df_sorted, select_param, 
+                    on=['accent', 'accent_b', '#phone'], how='inner')
+    else:
+        raise ValueError("wrong select_mode value")
 
     df_selected.reset_index(drop=True, inplace=True)
     mean_abx_score = df_selected['score'].mean()
+    if select_mode == "combination":
+        # print(mean_abx_score) # "selected_score,", select_param, select_mode,  file_path
+        pass
+    else:
+        print("file_path, select_mode, select_param, mean_abx_score", file_path, select_mode, select_param, mean_abx_score) # "selected_score,", select_param, select_mode,  file_path
 
-    print(file_path, mean_abx_score) # "selected_score,", select_param, select_mode,  file_path
     # df_selected.to_csv(os.path.join(output_dir, "reordered_collapsed_scores_top5.csv"), index=False)
+
+    selected_combinations = df_selected[['accent', 'accent_b', '#phone']].drop_duplicates()
+
+    return selected_combinations, mean_abx_score
+
+def parse_args():
+    """
+    Parses command-line arguments for the file reorganization script.
+    """
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('file_path',type=str)
+    parser.add_argument('select_mode',type=str, choices={"threshold", "ratio", "number", "combination"}, default="number")
+    parser.add_argument('select_param',type=float)
+    args = parser.parse_args()
+    return args
 
 if __name__ == "__main__":
 
-    def parse_args():
-        """
-        Parses command-line arguments for the file reorganization script.
-        """
-        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # args = parse_args()
+    # selected_scores(args.file_path, args.select_mode, args.select_param)
+    ### Multiple results
+    file_paths = [
+        "/home/s2522559/datastore/vctk/hubert_feature/large_l18_mic1_abx_errors_nolevel.csv",
+        "/home/s2522559/datastore/RepCodec_codecs/repcodec_hubert_large_l18_ls100/VCTK_tokens_reorg_abx_errors_nolevel.csv",
+        "/home/s2522559/datastore/RepCodec_codecs/repcodec_hubert_large_l18_ls100_released/VCTK_tokens_reorg_abx_errors_nolevel.csv",
+        "/home/s2522559/datastore/RepCodec_codecs/repcodec_hubert_large_l18_ls100_merge0.2vctk/VCTK_tokens_reorg_abx_errors_nolevel.csv",
+        "/home/s2522559/datastore/RepCodec_codecs/repcodec_hubert_large_l18_ls100_merge0.5vctk/VCTK_tokens_reorg_abx_errors_nolevel.csv",
+        "/home/s2522559/datastore/RepCodec_codecs/repcodec_hubert_large_l18_ls100_merge1.0vctk/VCTK_tokens_reorg_abx_errors_nolevel.csv",
+    ]
 
-        parser.add_argument('file_path',type=str)
-        parser.add_argument('select_mode',type=str, choices={"threshold", "ratio", "number"}, default="number")
-        parser.add_argument('select_param',type=float)
-        args = parser.parse_args()
-        return args
-    args = parse_args()
-    selected_scores(args.file_path, args.select_mode, args.select_param)
+    for select_param in [100, 200, 300, 400, 600, 900]:
+        selected_combinations_first, _ = selected_scores(file_paths[0], "number", select_param)
+        other_scores = []
+        for f in file_paths[1:]:
+            _, score = selected_scores(f, "combination", selected_combinations_first)
+            other_scores.append(score)
+        print(" ".join([str(s) for s in other_scores]))
+
+    for select_param in [0.025, 0.05, 0.1, 0.2]:
+        selected_combinations_first, _ = selected_scores(file_paths[0], "ratio", select_param)
+        other_scores = []
+        for f in file_paths[1:]:
+            _, score = selected_scores(f, "combination", selected_combinations_first)
+            other_scores.append(score)
+        print(" ".join([str(s) for s in other_scores]))
+
+
