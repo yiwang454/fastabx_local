@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
     # # Run the conversion
     # speaker_df = read_speaker_info(speaker_info_path)
-    convert_alignment_csv_to_item_file(alignment_base_folder, output_file_name, speaker_df, speaker_to_accent_dict, n_workers=n_workers)
+    convert_alignment_csv_to_item_file(alignment_base_folder, output_file_name, speaker_to_accent_dict, n_workers=n_workers)
 
     ############ debug ##############
     # global speaker_info_df_global, target_word_list_global, speaker_to_accent_dict_global
