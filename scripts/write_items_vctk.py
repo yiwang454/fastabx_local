@@ -203,7 +203,7 @@ def convert_alignment_csv_to_item_file(
 
 # --- Example Usage ---
 if __name__ == "__main__":
-    alignment_base_folder = sys.argv[1] 
+    alignment_base_folder = sys.argv[1]
     output_file_name = sys.argv[2]
     n_workers = int(sys.argv[3])
     speaker_info_path = sys.argv[4]
