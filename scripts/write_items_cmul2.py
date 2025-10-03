@@ -2,13 +2,13 @@ import pandas as pd
 import os, sys, re, json
 from multiprocessing import Pool
 
-global speaker_info_df_global
 
-def worker_init(df, word_list, s2a_dict):
-    global speaker_info_df_global
+
+def worker_init(word_list, s2a_dict):
+
     global target_word_list_global
     global speaker_to_accent_dict_global
-    speaker_info_df_global = df
+
     target_word_list_global = word_list
     speaker_to_accent_dict_global = s2a_dict
 
@@ -118,14 +118,14 @@ def csv_single_process_words(scratch_path, speaker_dir, filename):
     outfile_list = []
     csv_path = os.path.join(scratch_path, speaker_dir, filename)
     file_id = os.path.splitext(filename)[0] # speaker_dir + "/" +
-    name_speaker = filename.split("_")[0]
+    name_speaker = speaker_dir
 
     # Read the CSV file
     df = pd.read_csv(csv_path)
 
     # Filter for 'phones'
     phone_df = df[df['Type'] == 'words'].copy()
-    global speaker_info_df_global
+
     global target_word_list_global
     global speaker_to_accent_dict_global
 
@@ -141,8 +141,8 @@ def csv_single_process_words(scratch_path, speaker_dir, filename):
 
     # # Iterate through phone entries to determine prev/next phones
     # phone_labels = phone_df['words'].tolist()
-    speaker_row = speaker_info_df_global.loc[speaker_info_df_global['ID'] == speaker]
-    accent_labels, gender_labels = speaker_to_accent_dict_global[speaker], speaker_row.GENDER.values[0]
+
+    accent_labels, gender_labels = speaker_to_accent_dict_global[speaker], "NA"
 
     for i, row in phone_df.iterrows():
         onset = row['Begin']
@@ -160,7 +160,6 @@ def csv_single_process_words(scratch_path, speaker_dir, filename):
 def convert_alignment_csv_to_item_file(
     scratch_path: str,
     output_item_file: str,
-    speaker_info_df,
     speaker_to_accent_dict,
     n_workers: int = 4,
 ):
@@ -186,7 +185,7 @@ def convert_alignment_csv_to_item_file(
     with Pool(
         processes=n_workers,
         initializer=worker_init,
-        initargs=(speaker_info_df, target_word_list, speaker_to_accent_dict) # Pass the DataFrame here
+        initargs=(target_word_list, speaker_to_accent_dict) # Pass the DataFrame here
     ) as p:
         results = p.starmap(csv_single_process_words, inputs_list)
 
@@ -217,8 +216,8 @@ if __name__ == "__main__":
 
     speaker_to_accent_dict = {speaker: accent for accent, speakers in accent_to_speaker.items() for speaker in speakers}
 
-    # Run the conversion
-    speaker_df = read_speaker_info(speaker_info_path)
+    # # Run the conversion
+    # speaker_df = read_speaker_info(speaker_info_path)
     convert_alignment_csv_to_item_file(alignment_base_folder, output_file_name, speaker_df, speaker_to_accent_dict, n_workers=n_workers)
 
     ############ debug ##############
